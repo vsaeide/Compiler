@@ -5,8 +5,7 @@
 
 class Scanner:
 
-    keyword = ['if', 'else', 'void', 'int', 'repeat', 'break', 'until', 'return']
-    # == symbol?
+    keyword = ['if', 'else', 'void', 'int', 'repeat', 'break', 'until', 'return', 'endif']
     symbol = [';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-','<', '=', '*', '==']
     whitespace = [' ', '\n', '\r', '\t', '\v', '\f']
     error_types=['Invalid input','Unmatched comment' ,'Unclosed comment','Invalid number']
@@ -20,8 +19,7 @@ class Scanner:
         self.line_num = 1
         self.token = []
         self.lex_error = []
-        self.program = open(input, 'r').read()+"\n"
-        #self.comment_start_line=None
+        self.program = open(input, 'r').read()+"$\n"
         self.token_start_loc=0
         self.curr_loc =0
         self.file_cap = len(self.program)
@@ -212,9 +210,9 @@ class Scanner:
     def scan(self):
 
         temp_last_line=0
+
         while (self.curr_loc < self.file_cap):
 
-            line_before_call_func=self.line_num
             next_token=self.get_next_token()
 
 
@@ -227,39 +225,39 @@ class Scanner:
                 temp_last_line=self.line_num
 
 
-        # create files
-        f1 = open("tokens.txt", "w")
-        f1.write(self.tokens[1:])
-        f1.close()
+        # # create files
+        # f1 = open("tokens.txt", "w")
+        # f1.write(self.tokens[1:])
+        # f1.close()
+        # #
+        # error_string=""
+        # last_line=0
+        # if len(self.lex_error):
+        #     for error in self.lex_error:
+        #         error[1]=self.Ignore_whitespace(error[1])
+        #         if not error[0]==last_line:
+        #             if not last_line==0:
+        #                 error_string+="\n"
+        #             error_string+=str(error[0])+".\t("+ error[1]+", "+error[2]+")"
+        #             last_line=error[0]
+        #         else:
+        #             error_string+=" ("+ error[1]+", "+error[2]+")"
         #
-        error_string=""
-        last_line=0
-        if len(self.lex_error):
-            for error in self.lex_error:
-                error[1]=self.Ignore_whitespace(error[1])
-                if not error[0]==last_line:
-                    if not last_line==0:
-                        error_string+="\n"
-                    error_string+=str(error[0])+".\t("+ error[1]+", "+error[2]+")"
-                    last_line=error[0]
-                else:
-                    error_string+=" ("+ error[1]+", "+error[2]+")"
-
-
-        else:
-            error_string="There is no lexical error."
-        f2 = open("lexical_errors.txt", "w")
-        f2.write(error_string)
-        f2.close()
         #
-        table=""
-        f3 = open("symbol_table.txt", "w")
-        counter=1
-        for symbol in self.symbol_table:
-            table+=str(counter)+".\t"+symbol+"\n"
-            counter+=1
-        f3.write(table[:-1])
-        f3.close()
+        # else:
+        #     error_string="There is no lexical error."
+        # f2 = open("lexical_errors.txt", "w")
+        # f2.write(error_string)
+        # f2.close()
+        # #
+        # table=""
+        # f3 = open("symbol_table.txt", "w")
+        # counter=1
+        # for symbol in self.symbol_table:
+        #     table+=str(counter)+".\t"+symbol+"\n"
+        #     counter+=1
+        # f3.write(table[:-1])
+        # f3.close()
 
 
 
