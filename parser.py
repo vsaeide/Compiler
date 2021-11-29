@@ -1,32 +1,48 @@
 from scanner import Scanner
-from First import first
-from Follow import follow
-from Predict_set import predict_set
-from anytree import Node, RenderTree
+from Package1.First import first
+from Package1.Follow import follow
+from anytree import Node
 
 
-class Parser:
+class parser:
     illigal_error = 'illegal lookahead on line N'
     missing_error = 'missing Statement on line N'
     syn_err_l = []
 
-    def __init__(self, input):
+    def __init__(self):
         self.scanner = Scanner('./input.txt')
         self.look_ahead = ""
         self.state = 0
         self.root = Node("Program")
         self.next_token()
+        self.Program(self.root)
 
     def next_token(self):
-        self.cpl_token = self.scanner.get_next_token()
 
-        if not self.cpl_token == None:
-            if self.cpl_token[0] == 'NUM' or self.cpl_token[0] == 'ID':
-                self.look_ahead = self.cpl_token[0]
-            elif self.cpl_token == '$':
-                self.look_ahead = '$'
-            else:
-                self.look_ahead = self.cpl_token[1]
+        self.cpl_token = self.scanner.get_next_token()
+        #self.token = "(" + self.cpl_token[0] + "," + self.cpl_token[1] + ")"
+
+        if self.cpl_token == '$':
+            self.look_ahead = '$'
+            self.token = '$'
+        elif self.cpl_token[0] == 'NUM' or self.cpl_token[0] == 'ID':
+            self.look_ahead = self.cpl_token[0]
+            self.token = "(" + self.cpl_token[0] + ", " + self.cpl_token[1] + ")"
+        else:
+            self.look_ahead = self.cpl_token[1]
+            self.token = "(" + self.cpl_token[0] + ", " + self.cpl_token[1] + ")"
+
+        # if not self.cpl_token == None:
+        #     if self.cpl_token[0] == 'NUM' or self.cpl_token[0] == 'ID':
+        #         self.look_ahead = self.cpl_token[0]
+        #     elif self.cpl_token == '$':
+        #         self.look_ahead = '$'
+        #     else:
+        #         self.look_ahead = self.cpl_token[1]
+        # else:
+        #     self.look_ahead='$'
+        #     self.token='$'
+
 
     ###################################################################3
 
@@ -47,7 +63,7 @@ class Parser:
 
         if state == "Program_1":
             if self.look_ahead == "$":
-                node = Node(self.look_ahead, parent_node)
+                node = Node('$', parent_node)
                 state = "Program_2"
 
     def Declaration_list(self, parent_node):
@@ -61,15 +77,16 @@ class Parser:
             # eps
             else:
                 state = 2
+                node = Node("epsilon", parent_node)
 
         if state == 1:
             if self.look_ahead in first["Declaration-list"]:
                 node = Node("Declaration-list", parent_node)
-                self.Declaration(node)
+                self.Declaration_list(node)
                 state = 2
             elif self.look_ahead in follow["Declaration-list"]:
                 node = Node("Declaration-list", parent_node)
-                self.Declaration(node)
+                self.Declaration_list(node)
                 state = 2
 
     def Declaration(self, parent_node):
@@ -83,7 +100,7 @@ class Parser:
         if state == 1:
             if self.look_ahead in first["Declaration-prime"]:
                 node = Node("Declaration-prime", parent_node)
-                self.Declaration_initial(node)
+                self.Declaration_prime(node)
                 state = 2
 
     def Declaration_prime(self, parent_node):
@@ -91,16 +108,16 @@ class Parser:
 
         if self.look_ahead in first["Fun-declaration-prime"]:
             node = Node("Fun-declaration-prime", parent_node)
-            self.Declaration_initial(node)
+            self.Fun_declaration_prime(node)
         elif self.look_ahead in first["Var-declaration-prime"]:
             node = Node("Var-declaration-prime", parent_node)
-            self.Declaration_initial(node)
+            self.Var_declaration_prime(node)
 
     def Fun_declaration_prime(self, parent_node):
         state = 0
         if state == 0:
             if self.look_ahead == "(":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
 
@@ -112,7 +129,7 @@ class Parser:
 
         if state == 2:
             if self.look_ahead == ")":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
 
@@ -126,17 +143,17 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "int":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "void":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
 
         if state == 1:
             if self.look_ahead == "ID":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
 
@@ -165,11 +182,12 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == ",":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             # else epsil
             else:
+                node = Node("epsilon", parent_node)
                 state = 3
 
         if state == 1:
@@ -210,7 +228,7 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "{":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
 
@@ -235,7 +253,7 @@ class Parser:
 
         if state == 3:
             if self.look_ahead == "}":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
 
@@ -247,6 +265,7 @@ class Parser:
                 self.Statement(node)
                 state = 1
             else:
+                node = Node("epsilon", parent_node)
                 state = 2
 
         if state == 1:
@@ -292,17 +311,17 @@ class Parser:
                 self.Expression(node)
                 state = 1
             elif self.look_ahead == "break":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == ";":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
 
         if state == 1:
             if self.look_ahead == ";":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
 
@@ -310,12 +329,12 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "if":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
         if state == 1:
             if self.look_ahead == "(":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
         if state == 2:
@@ -326,7 +345,7 @@ class Parser:
 
         if state == 3:
             if self.look_ahead == ")":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
         if state == 4:
@@ -344,11 +363,11 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "endif":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "else":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
         if state == 2:
@@ -358,7 +377,7 @@ class Parser:
                 state = 3
         if state == 3:
             if self.look_ahead == "endif":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
 
@@ -367,7 +386,7 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "repeat":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
         if state == 1:
@@ -377,12 +396,12 @@ class Parser:
                 state = 2
         if state == 2:
             if self.look_ahead == "until":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
         if state == 3:
             if self.look_ahead == "(":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
         if state == 4:
@@ -393,7 +412,7 @@ class Parser:
 
         if state == 5:
             if self.look_ahead == ")":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 6
 
@@ -401,7 +420,7 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "return":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
         if state == 1:
@@ -414,7 +433,7 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == ";":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead in first["Expression"]:
@@ -424,7 +443,7 @@ class Parser:
 
         if state == 2:
             if self.look_ahead == ";":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
 
@@ -437,7 +456,7 @@ class Parser:
                 state = 1
 
             elif self.look_ahead == "ID":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
 
@@ -454,17 +473,17 @@ class Parser:
     def B(self, parent_node):
         state = 0
         if state == 0:
-            if self.look_ahead in first["Expression"]:
-                node = Node("Expression", parent_node)
-                self.Expression(node)
-                state = 1
+            if self.look_ahead == "=":
+                node = Node(self.token, parent_node)
+                self.next_token()
+                state = 5
             elif self.look_ahead in first["Simple-expression-prime"] or self.look_ahead in follow[
                 "Simple-expression-prime"]:
                 node = Node("Simple-expression-prime", parent_node)
                 self.Simple_expression_prime(node)
                 state = 1
             elif self.look_ahead == "[":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
 
@@ -475,7 +494,7 @@ class Parser:
                 state = 3
         if state == 3:
             if self.look_ahead == "]":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
         if state == 4:
@@ -487,14 +506,21 @@ class Parser:
                 node = Node("H", parent_node)
                 self.H(node)
                 state = 1
-
-    def H(self, parent_node):
-        state = 0
-        if state == 0:
+        if state == 5:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
                 state = 1
+
+    def H(self, parent_node):
+        state = 0
+        if state == 0:
+            if state == 3:
+                if self.look_ahead == "=":
+                    node = Node(self.token, parent_node)
+                    self.next_token()
+                    state = 4
+
             elif self.look_ahead in first["G"] or self.look_ahead in follow["G"]:
                 node = Node("G", parent_node)
                 self.G(node)
@@ -509,6 +535,11 @@ class Parser:
             if self.look_ahead in first["C"] or self.look_ahead in follow["C"]:
                 node = Node("C", parent_node)
                 self.C(node)
+                state = 1
+        if state == 4:
+            if self.look_ahead in first["Expression"]:
+                node = Node("Expression", parent_node)
+                self.Expression(node)
                 state = 1
 
     def Simple_expression_zegond(self, parent_node):
@@ -546,6 +577,7 @@ class Parser:
                 self.Relop(node)
                 state = 1
             else:
+                node = Node("epsilon", parent_node)
                 state = 2
             # elif epsilon
 
@@ -643,11 +675,12 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "*":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             # eps
             else:
+                node = Node("epsilon", parent_node)
                 state = 3
         if state == 1:
             if self.look_ahead in first["Factor"]:
@@ -664,15 +697,15 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "(":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "NUM":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
             elif self.look_ahead == "ID":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
 
@@ -683,7 +716,7 @@ class Parser:
                 state = 2
         if state == 2:
             if self.look_ahead == ")":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
         if state == 4:
@@ -696,7 +729,7 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "(":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead in first["Var-prime"] or self.look_ahead in follow["Var-prime"]:
@@ -711,7 +744,7 @@ class Parser:
                 state = 2
         if state == 2:
             if self.look_ahead == ")":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
 
@@ -719,12 +752,13 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "[":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             # eps
             else:
                 state = 3
+                node = Node("epsilon", parent_node)
 
         if state == 1:
             if self.look_ahead in first["Expression"]:
@@ -733,7 +767,7 @@ class Parser:
                 state = 2
         if state == 2:
             if self.look_ahead == "]":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
 
@@ -741,10 +775,14 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "(":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             # eps
+            else:
+                state=3
+                node = Node("epsilon", parent_node)
+
 
         if state == 1:
             if self.look_ahead in first["Args"] or self.look_ahead in follow["Args"]:
@@ -753,7 +791,7 @@ class Parser:
                 state = 2
         if state == 2:
             if self.look_ahead == ")":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
 
@@ -761,11 +799,11 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == "(":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "NUM":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
 
@@ -776,7 +814,7 @@ class Parser:
                 state = 2
         if state == 2:
             if self.look_ahead == ")":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
 
@@ -789,6 +827,8 @@ class Parser:
                 state = 1
             else:
                 state = 1
+                node = Node("epsilon", parent_node)
+
             # 3ps
 
     def Arg_list(self, parent_node):
@@ -808,12 +848,13 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == ",":
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             # eps
             else:
-                state=3
+                state = 3
+                node = Node("epsilon", parent_node)
 
         if state == 1:
             if self.look_ahead in first["Expression"]:
@@ -837,6 +878,7 @@ class Parser:
                 state = 1
             else:
                 state = 3
+                node = Node("epsilon", parent_node)
 
         if state == 1:
 
@@ -845,7 +887,7 @@ class Parser:
                 self.Term(node)
                 state = 2
         if state == 2:
-            if self.look_ahead in first['D']:
+            if self.look_ahead in first['D'] or self.look_ahead in follow["D"]:
                 node = Node('D', parent_node)
                 self.D(node)
                 state = 3
@@ -861,7 +903,7 @@ class Parser:
 
         if state == 1:
             if self.look_ahead == 'ID':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
 
@@ -870,15 +912,17 @@ class Parser:
         state = 0
         if state == 0:
             if self.look_ahead == '[':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             # eps
             else:
                 state = 2
+                node = Node("epsilon", parent_node)
+
         if state == 1:
             if self.look_ahead == ']':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
 
@@ -887,26 +931,26 @@ class Parser:
         if state == 0:
 
             if self.look_ahead == ';':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == '[':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
         if state == 2:
             if self.look_ahead == 'NUM':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
         if state == 3:
             if self.look_ahead == ']':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
         if state == 4:
             if self.look_ahead == ';':
-                node = Node(self.look_ahead, parent_node)
+                node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
 
@@ -914,14 +958,14 @@ class Parser:
         # state = 0
         # if state == 0:
         if self.look_ahead == 'int' or self.look_ahead == 'void':
-            node = Node(self.look_ahead, parent_node)
+            node = Node(self.token, parent_node)
             self.next_token()
 
     def Relop(self, parent_node):
         # state = 0
         # if state == 0:
         if self.look_ahead == '<' or self.look_ahead == '==':
-            node = Node(self.look_ahead, parent_node)
+            node = Node(self.token, parent_node)
             self.next_token()
 
     def Addop(self, parent_node):
@@ -929,5 +973,5 @@ class Parser:
         # if state == 0:
 
         if self.look_ahead == '-' or self.look_ahead == '+':
-            node = Node(self.look_ahead, parent_node)
+            node = Node(self.token, parent_node)
             self.next_token()

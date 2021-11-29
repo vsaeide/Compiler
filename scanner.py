@@ -2,42 +2,35 @@
 # sabrineh mokhtari 96110107
 
 
-
 class Scanner:
-
     keyword = ['if', 'else', 'void', 'int', 'repeat', 'break', 'until', 'return', 'endif']
-    symbol = [';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-','<', '=', '*', '==']
+    symbol = [';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-', '<', '=', '*', '==']
     whitespace = [' ', '\n', '\r', '\t', '\v', '\f']
-    error_types=['Invalid input','Unmatched comment' ,'Unclosed comment','Invalid number']
-    symbol_table=[]
-    tokens=""
-    state ='0'
-
+    error_types = ['Invalid input', 'Unmatched comment', 'Unclosed comment', 'Invalid number']
+    symbol_table = []
+    tokens = ""
+    state = '0'
 
     def __init__(self, input):
 
         self.line_num = 1
         self.token = []
         self.lex_error = []
-        self.program = open(input, 'r').read()+"$\n"
-        self.token_start_loc=0
-        self.curr_loc =0
+        self.program = open(input, 'r').read() + "\n"
+        self.token_start_loc = 0
+        self.curr_loc = 0
         self.file_cap = len(self.program)
 
         for word in self.keyword:
             self.symbol_table.append(word)
 
-
-
-
-
     def get_next_token(self):
 
-        while(self.curr_loc<self.file_cap):
+        while (self.curr_loc < self.file_cap):
 
-            result=None # the token pair = ( token type , token string)
-            
-            if self.state == '0': # we have to recognize new token
+            result = None  # the token pair = ( token type , token string)
+
+            if self.state == '0':  # we have to recognize new token
                 self.token_start_loc = self.curr_loc
 
             self.dfa_navigation(self.program[self.curr_loc])
@@ -47,9 +40,9 @@ class Scanner:
             if self.state == '2':
 
                 if token in self.keyword:
-                    result= ("KEYWORD", token )
+                    result = ("KEYWORD", token)
                 else:
-                    result=("ID", token)
+                    result = ("ID", token)
 
                 if token not in self.symbol_table:
                     self.symbol_table.append(token)
@@ -81,22 +74,28 @@ class Scanner:
             elif self.state in self.error_types:
                 if self.state == 'Unclosed comment':
                     self.lex_error.append(
-                        [self.comment_start_line, self.program[self.token_start_loc:self.curr_loc + 1][0:7] + "...", self.state])
+                        [self.comment_start_line, self.program[self.token_start_loc:self.curr_loc + 1][0:7] + "...",
+                         self.state])
                 else:
-                    self.lex_error.append([self.line_num, self.program[self.token_start_loc:self.curr_loc + 1], self.state])
+                    self.lex_error.append(
+                        [self.line_num, self.program[self.token_start_loc:self.curr_loc + 1], self.state])
                 self.state = '0'
                 self.curr_loc += 1
             else:
                 self.curr_loc += 1
 
-            if self.program[self.curr_loc-1] == '\n':
+            if self.program[self.curr_loc - 1] == '\n':
                 self.line_num += 1
 
-            if not result==None:
+            if not result == None:
                 return result
-            
-            
-            
+            # if self.curr_loc <= self.file_cap:
+            #     return '$'
+
+
+        return '$'
+
+
     # functions
 
     def is_valid_char(self, chr):
@@ -131,7 +130,6 @@ class Scanner:
         for whitespace in self.whitespace[1:]:
             input = input.replace(whitespace, '')
         return input
-    
 
     def dfa_navigation(self, chr):
 
@@ -172,7 +170,7 @@ class Scanner:
             elif self.is_valid_char(chr):
                 self.state = '9'
             else:
-                self.state='Invalid input'
+                self.state = 'Invalid input'
 
         elif self.state == '8':
             if not chr == '/':
@@ -206,24 +204,23 @@ class Scanner:
             elif not chr == "*":
                 self.state = 'd'
 
-
     def scan(self):
 
-        temp_last_line=0
-
+        temp_last_line = 0
+        cont=1
         while (self.curr_loc < self.file_cap):
 
-            next_token=self.get_next_token()
+            next_token = self.get_next_token()
+            print(cont," ",next_token)
+            cont+=1
 
-
-            if not next_token==None:
-                temp_tokens = " "+str(next_token)
-                if not self.line_num==temp_last_line:
-                    self.tokens += "\n"+str(self.line_num) + ".\t" + temp_tokens.replace("'","")[1:]
+            if not next_token == None:
+                temp_tokens = " " + str(next_token)
+                if not self.line_num == temp_last_line:
+                    self.tokens += "\n" + str(self.line_num) + ".\t" + temp_tokens.replace("'", "")[1:]
                 else:
-                    self.tokens+=temp_tokens.replace("'","")
-                temp_last_line=self.line_num
-
+                    self.tokens += temp_tokens.replace("'", "")
+                temp_last_line = self.line_num
 
         # # create files
         # f1 = open("tokens.txt", "w")
@@ -261,5 +258,5 @@ class Scanner:
 
 
 
-
-
+# sc=Scanner('./input.txt')
+# sc.scan()
