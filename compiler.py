@@ -1,13 +1,11 @@
 # saeede vahedi 96102664
 # sabrineh mokhtari 96110107
 
-from parser import parser
+from Parser import parser
 from anytree import RenderTree
 
 parser = parser()
 
-# for pre, fill, node in RenderTree(parser.root):
-#     print("%s%s" % (pre, node.name))
 
 flag = False
 
@@ -20,10 +18,6 @@ with open("parse_tree.txt", 'w', encoding='utf-8') as file:  # parse_tree file
             flag=True
 
 
-
-# with open("parse_tree.txt", 'rb+') as file:
-#     file.seek(-1, os.SEEK_END)
-#     file.truncate()
 
 
 with open("syntax_errors.txt", "w") as file:  # syntax errors file

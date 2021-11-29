@@ -61,7 +61,8 @@ class Scanner:
             elif self.state == '9':
                 result = ("SYMBOL", token)
                 self.state = '0'
-                self.curr_loc += 1
+                #self.curr_loc += 1
+                #TODO
 
             elif self.state == 'c':
                 self.state = '0'

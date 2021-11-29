@@ -5,8 +5,10 @@ from anytree import Node
 
 
 class parser:
-    illigal_error = 'illegal lookahead on line N'
-    missing_error = 'missing Statement on line N'
+
+    #illigal_error = 'illegal lookahead on line N'
+    #missing_error = 'missing Statement on line N'
+
     syn_err_l = []
 
     def __init__(self):
@@ -20,7 +22,6 @@ class parser:
     def next_token(self):
 
         self.cpl_token = self.scanner.get_next_token()
-        #self.token = "(" + self.cpl_token[0] + "," + self.cpl_token[1] + ")"
 
         if self.cpl_token == '$':
             self.look_ahead = '$'
@@ -32,39 +33,26 @@ class parser:
             self.look_ahead = self.cpl_token[1]
             self.token = "(" + self.cpl_token[0] + ", " + self.cpl_token[1] + ")"
 
-        # if not self.cpl_token == None:
-        #     if self.cpl_token[0] == 'NUM' or self.cpl_token[0] == 'ID':
-        #         self.look_ahead = self.cpl_token[0]
-        #     elif self.cpl_token == '$':
-        #         self.look_ahead = '$'
-        #     else:
-        #         self.look_ahead = self.cpl_token[1]
-        # else:
-        #     self.look_ahead='$'
-        #     self.token='$'
+
 
 
     ###################################################################3
 
     def Program(self, parent_node):
 
-        state = "Program_0"
+        state = 0
 
-        if state == "Program_0":
-            if self.look_ahead in first["Declaration-list"]:
+        if state == 0:
+            if self.look_ahead in first["Declaration-list"] or self.look_ahead in follow["Declaration-list"]:
                 node = Node("Declaration-list", parent_node)
                 self.Declaration_list(node)
-                state = "Program_1"
+                state =1
             # eps
-            elif self.look_ahead in follow["Declaration-list"]:
-                node = Node("Declaration-list", parent_node)
-                self.Declaration_list(node)
-                state = "Program_1"
 
-        if state == "Program_1":
+        if state == 1:
             if self.look_ahead == "$":
                 node = Node('$', parent_node)
-                state = "Program_2"
+                state = 2
 
     def Declaration_list(self, parent_node):
         state = 0
@@ -80,14 +68,11 @@ class parser:
                 node = Node("epsilon", parent_node)
 
         if state == 1:
-            if self.look_ahead in first["Declaration-list"]:
+            if self.look_ahead in first["Declaration-list"] or self.look_ahead in follow["Declaration-list"]:
                 node = Node("Declaration-list", parent_node)
                 self.Declaration_list(node)
                 state = 2
-            elif self.look_ahead in follow["Declaration-list"]:
-                node = Node("Declaration-list", parent_node)
-                self.Declaration_list(node)
-                state = 2
+
 
     def Declaration(self, parent_node):
         state = 0
@@ -158,24 +143,17 @@ class parser:
                 state = 2
 
         if state == 2:
-            if self.look_ahead in first["Param-prime"]:
-                node = Node("Param-prime", parent_node)
-                self.Param_prime(node)
-                state = 3
-            elif self.look_ahead in follow["Param-prime"]:
+            if self.look_ahead in first["Param-prime"] or self.look_ahead in follow["Param-prime"]:
                 node = Node("Param-prime", parent_node)
                 self.Param_prime(node)
                 state = 3
 
         if state == 3:
-            if self.look_ahead in first["Param-list"]:
+            if self.look_ahead in first["Param-list"] or self.look_ahead in follow["Param-list"]:
                 node = Node("Param-list", parent_node)
                 self.Param_prime(node)
                 state = 4
-            elif self.look_ahead in follow["Param-list"]:
-                node = Node("Param-list", parent_node)
-                self.Param_prime(node)
-                state = 4
+
 
     def Param_list(self, parent_node):
 
@@ -197,14 +175,11 @@ class parser:
                 state = 2
 
         if state == 2:
-            if self.look_ahead in first["Param-list"]:
+            if self.look_ahead in first["Param-list"] or self.look_ahead in follow["Param-list"]:
                 node = Node("Param-list", parent_node)
                 self.Param_list(node)
                 state = 3
-            elif self.look_ahead in follow["Param-list"]:
-                node = Node("Param-list", parent_node)
-                self.Param_list(node)
-                state = 3
+
 
     def Param(self, parent_node):
         state = 0
@@ -215,14 +190,11 @@ class parser:
                 state = 1
 
         if state == 1:
-            if self.look_ahead in first["Param-prime"]:
+            if self.look_ahead in first["Param-prime"] or self.look_ahead in follow["Param-prime"]:
                 node = Node("Param-prime", parent_node)
                 self.Param_list(node)
                 state = 2
-            elif self.look_ahead in follow["Param-prime"]:
-                node = Node("Param-prime", parent_node)
-                self.Param_list(node)
-                state = 2
+
 
     def Compound_stmt(self, parent_node):
         state = 0
@@ -233,23 +205,17 @@ class parser:
                 state = 1
 
         if state == 1:
-            if self.look_ahead in first["Declaration-list"]:
+            if self.look_ahead in first["Declaration-list"] or self.look_ahead in follow["Declaration-list"]:
                 node = Node("Declaration-list", parent_node)
                 self.Declaration_list(node)
                 state = 2
-            elif self.look_ahead in follow["Declaration-list"]:
-                node = Node("Declaration-list", parent_node)
-                self.Declaration_list(node)
-                state = 2
+
         if state == 2:
-            if self.look_ahead in first["Statement-list"]:
+            if self.look_ahead in first["Statement-list"] or self.look_ahead in follow["Statement-list"]:
                 node = Node("Statement-list", parent_node)
                 self.Statement_list(node)
                 state = 3
-            elif self.look_ahead in follow["Statement-list"]:
-                node = Node("Statement-list", parent_node)
-                self.Statement_list(node)
-                state = 3
+
 
         if state == 3:
             if self.look_ahead == "}":
@@ -269,15 +235,11 @@ class parser:
                 state = 2
 
         if state == 1:
-            if self.look_ahead in first["Statement-list"]:
+            if self.look_ahead in first["Statement-list"] or self.look_ahead in follow["Statement-list"]:
                 node = Node("Statement-list", parent_node)
                 self.Statement_list(node)
                 state = 3
-            elif self.look_ahead in follow["Statement-list"]:
-                node = Node("Statement-list", parent_node)
-                self.Statement_list(node)
-                state = 3
-        return
+
 
     def Statement(self, parent_node):
         # state = 0
@@ -461,14 +423,11 @@ class parser:
                 state = 2
 
         if state == 2:
-            if self.look_ahead in first["B"]:
+            if self.look_ahead in first["B"] or self.look_ahead in follow["B"]:
                 node = Node("B", parent_node)
                 self.B(node)
                 state = 1
-            elif self.look_ahead in follow["B"]:
-                node = Node("B", parent_node)
-                self.B(node)
-                state = 1
+
 
     def B(self, parent_node):
         state = 0
@@ -498,17 +457,16 @@ class parser:
                 self.next_token()
                 state = 4
         if state == 4:
-            if self.look_ahead in first["H"]:
+            if self.look_ahead in first["H"] or self.look_ahead in follow["H"]:
                 node = Node("H", parent_node)
                 self.H(node)
                 state = 1
-            elif self.look_ahead in follow["H"]:
-                node = Node("H", parent_node)
-                self.H(node)
-                state = 1
+
         if state == 5:
+            #print("expresisin ", self.look_ahead , self.scanner.line_num , self.token)
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
+                #print("node added")
                 self.Expression(node)
                 state = 1
 
