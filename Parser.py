@@ -3,16 +3,10 @@ from Package1.First import first
 from Package1.Follow import follow
 from anytree import Node
 from anytree import RenderTree
-
-
-# syn_err_l = []
+from code_generator import CodeGeneration
 
 
 class parser:
-    # illigal_error = 'illegal lookahead on line N'
-    # missing_error = 'missing Statement on line N'
-
-    # global syn_err_l
 
     def __init__(self):
         self.scanner = Scanner('./input.txt')
@@ -21,6 +15,7 @@ class parser:
         self.state = 0
         self.root = Node("Program")
         self.next_token()
+        self.code_generator = CodeGeneration()
         self.Program(self.root)
 
     def next_token(self):
@@ -36,40 +31,42 @@ class parser:
         else:
             self.look_ahead = self.cpl_token[1]
             self.token = "(" + self.cpl_token[0] + ", " + self.cpl_token[1] + ")"
-        # print(self.look_ahead)
 
     def EOF_error(self):
         if self.look_ahead == '$':
             error_msg = "#" + str(self.scanner.line_num - 1) + " : syntax error, Unexpected EOF"
             self.syn_err_l.append(error_msg)
-            ##print(error_msg)
             self.output()
             return True
         return False
 
     def output(self):
+
         flag = False
 
-        with open("parse_tree.txt", 'w', encoding='utf-8') as file:  # parse_tree file
-            for pre, _, node in RenderTree(self.root):
-                if flag:
-                    file.write("\n%s%s" % (pre, node.name))
-                else:
-                    file.write("%s%s" % (pre, node.name))
-                    flag = True
+        # with open("parse_tree.txt", 'w', encoding='utf-8') as file:  # parse_tree file
+        #     for pre, _, node in RenderTree(self.root):
+        #         if flag:
+        #             file.write("\n%s%s" % (pre, node.name))
+        #         else:
+        #             file.write("%s%s" % (pre, node.name))
+        #             flag = True
+        #
+        # with open("syntax_errors.txt", "w") as file:  # syntax errors file
+        #     if len(self.syn_err_l) == 0:
+        #         file.write("There is no syntax error.")
+        #     else:
+        #         for l in self.syn_err_l:
+        #             file.write(l + "\n")
 
-        with open("syntax_errors.txt", "w") as file:  # syntax errors file
-            if len(self.syn_err_l) == 0:
-                file.write("There is no syntax error.")
-            else:
-                for l in self.syn_err_l:
-                    file.write(l + "\n")
+        with open("output.txt", 'w') as file:
+            for idx, l in enumerate(self.code_generator.pb):
+                if l != '':
+                    file.write('{}\t{}\n'.format(idx, l))
 
     ###################################################################3
 
     def Program(self, parent_node, state=0):
-
-        # state = 0
 
         if state == 0:
             if self.look_ahead in first["Declaration-list"] or self.look_ahead in follow["Declaration-list"]:
@@ -82,33 +79,28 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Program(parent_node, 0)
 
         if state == 1:
             if self.look_ahead == "$":
                 node = Node('$', parent_node)
+                self.code_generator.code_gen("jp_main")
                 state = 2
             else:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Program(parent_node, 0)
 
     def Declaration_list(self, parent_node, state=0):
-        # state = 0
-
         if state == 0:
             if self.look_ahead in first["Declaration"]:
                 node = Node("Declaration", parent_node)
                 self.Declaration(node)
                 state = 1
-            # eps
             else:
                 state = 2
-                print(self.look_ahead)
                 node = Node("epsilon", parent_node)
 
         if state == 1:
@@ -117,25 +109,15 @@ class parser:
                 self.Declaration_list(node)
                 state = 2
             else:
-                # if self.look_ahead in follow["Declaration-list"]:
-                #     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Declaration-list"
-                #     self.syn_err_l.append(error_msg)
-                ###print(error_msg)
-                #     self.Program(parent_node, 0)
-                #     return
-                # else:
                 if self.EOF_error():
                     exit()
-                    ##print("kajkadlsid")
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Declaration_list(parent_node, 1)
 
     def Declaration(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Declaration-initial"]:
                 node = Node("Declaration-initial", parent_node)
@@ -148,12 +130,10 @@ class parser:
                 if self.look_ahead in follow["Declaration-initial"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Declaration-initial"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 1
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Declaration(parent_node, 0)
 
@@ -169,22 +149,22 @@ class parser:
                 if self.look_ahead in follow["Declaration-prime"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Declaration-prime"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Declaration(parent_node, 1)
 
     def Declaration_prime(self, parent_node, state=0):
-        # state =0
 
         if self.look_ahead in first["Fun-declaration-prime"]:
+            self.code_generator.code_gen("start_function")
             node = Node("Fun-declaration-prime", parent_node)
             self.Fun_declaration_prime(node)
         elif self.look_ahead in first["Var-declaration-prime"]:
+            #self.code_generator.code_gen("check_type",self.scanner.line_num)
+            #TODO?
             node = Node("Var-declaration-prime", parent_node)
             self.Var_declaration_prime(node)
         else:
@@ -194,22 +174,18 @@ class parser:
             if self.look_ahead in follow["Fun-declaration-prime"]:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Fun-declaration-prime"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
             elif self.look_ahead in follow["Var-declaration-prime"]:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Var-declaration-prime"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
             else:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Declaration_prime(parent_node, 0)
 
     def Fun_declaration_prime(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead == "(":
                 node = Node(self.token, parent_node)
@@ -221,13 +197,13 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "("
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
 
         if state == 1:
             if self.look_ahead in first["Params"]:
                 node = Node("Params", parent_node)
                 self.Params(node)
+                self.code_generator.code_gen("define_function")
                 state = 2
             else:
                 if self.EOF_error():
@@ -236,12 +212,10 @@ class parser:
                 if self.look_ahead in follow["Params"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Params"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Fun_declaration_prime(parent_node, 1)
 
@@ -256,13 +230,13 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ")"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
 
         if state == 3:
             if self.look_ahead in first["Compound-stmt"]:
                 node = Node("Compound-stmt", parent_node)
                 self.Compound_stmt(node)
+                self.code_generator.code_gen("end_function")
                 state = 4
             else:
                 if self.EOF_error():
@@ -271,42 +245,40 @@ class parser:
                 if self.look_ahead in follow["Compound-stmt"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Compound-stmt"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Fun_declaration_prime(parent_node, 3)
 
     def Params(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead == "int":
+                self.code_generator.code_gen("type",self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
-                print("in params next token is", self.look_ahead)
                 state = 1
             elif self.look_ahead == "void":
+                self.code_generator.code_gen("type",self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
+                self.code_generator.code_gen("pop")
+
             else:
                 if self.EOF_error():
                     exit()
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "int"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
 
         if state == 1:
             if self.look_ahead == "ID":
+                self.code_generator.code_gen("define_id",self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
-                print("in params next token is", self.look_ahead)
-
                 state = 2
             else:
                 if self.EOF_error():
@@ -314,36 +286,22 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "ID"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 2
 
         if state == 2:
             if self.look_ahead in first["Param-prime"] or self.look_ahead in follow["Param-prime"]:
+                self.code_generator.code_gen("add_param")
                 node = Node("Param-prime", parent_node)
                 self.Param_prime(node)
                 state = 3
             else:
                 if self.EOF_error():
                     exit()
-                    # print("man")
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
-                # print("AAAAAAAAAAAAAAAAAAAAAa")
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Params(parent_node, 2)
-                # if self.look_ahead in follow["Param-prime"]:
-                #     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Param-prime"
-                #     self.syn_err_l.append(error_msg)
-                #     ##print(error_msg)
-                #     state = 3
-                # else:
-                #     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
-                #     self.syn_err_l.append(error_msg)
-                #     ##print(error_msg)
-                #     self.next_token()
-                #     self.Params(parent_node, 2)
 
         if state == 3:
             if self.look_ahead in first["Param-list"] or self.look_ahead in follow["Param-list"]:
@@ -356,34 +314,17 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Params(parent_node, 3)
-                # if self.look_ahead in follow["Param-list"]:
-                #     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Param-list"
-                #     self.syn_err_l.append(error_msg)
-                #     ##print(error_msg)
-                #     state = 4
-                # else:
-                #     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
-                #     self.syn_err_l.append(error_msg)
-                #     ##print(error_msg)
-                #     self.next_token()
-                #     self.Params(parent_node, 3)
 
     def Param_list(self, parent_node, state=0):
 
-        # state = 0
         if state == 0:
-            print("param kis")
-            print(self.look_ahead)
             if self.look_ahead == ",":
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
-            # else epsil
             else:
-                print("va!")
                 node = Node("epsilon", parent_node)
                 state = 3
 
@@ -391,6 +332,7 @@ class parser:
             if self.look_ahead in first["Param"]:
                 node = Node("Param", parent_node)
                 self.Param(node)
+                self.code_generator.code_gen("add_param")
                 state = 2
             else:
                 if self.EOF_error():
@@ -399,12 +341,10 @@ class parser:
                 if self.look_ahead in follow["Param"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Param"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Param_list(parent_node, 1)
 
@@ -414,18 +354,11 @@ class parser:
                 self.Param_list(node)
                 state = 3
             else:
-                # if self.look_ahead in follow["Param"]:
-                #     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Param"
-                #     self.syn_err_l.append(error_msg)
-                ###print(error_msg)
-                #     state = 2
-                # else:
                 if self.EOF_error():
                     exit()
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Param_list(parent_node, 2)
 
@@ -443,12 +376,10 @@ class parser:
                 if self.look_ahead in follow["Declaration-initial"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Declaration-initial"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 1
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Param(parent_node, 0)
 
@@ -463,7 +394,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Param(parent_node, 1)
 
@@ -480,7 +410,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "{"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
 
         if state == 1:
@@ -494,7 +423,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Compound_stmt(parent_node, 1)
 
@@ -509,7 +437,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Compound_stmt(parent_node, 2)
 
@@ -524,7 +451,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "}"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 4
 
     def Statement_list(self, parent_node, state=0):
@@ -549,7 +475,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Statement_list(parent_node, 1)
 
@@ -583,32 +508,26 @@ class parser:
             if self.look_ahead in follow["Expression-stmt"]:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression-stmt"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
             elif self.look_ahead in follow["Compound-stmt"]:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Compound-stmt"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
             elif self.look_ahead in follow["Selection-stmt"]:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Selection-stmt"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
             elif self.look_ahead in follow["Iteration-stmt"]:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Iteration-stmt"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
             elif self.look_ahead in follow["Return-stmt"]:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Return-stmt"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
             else:
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Statement(parent_node, 0)
 
@@ -621,6 +540,7 @@ class parser:
                 state = 1
             elif self.look_ahead == "break":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("break",self.scanner.line_num)
                 self.next_token()
                 state = 1
             elif self.look_ahead == ";":
@@ -631,6 +551,7 @@ class parser:
         if state == 1:
             if self.look_ahead == ";":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("pop")
                 self.next_token()
                 state = 2
             else:
@@ -639,7 +560,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ";"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 2
 
     def Selection_stmt(self, parent_node, state=0):
@@ -660,7 +580,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "("
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
         if state == 2:
             if self.look_ahead in first["Expression"]:
@@ -674,18 +593,17 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 3
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Selection_stmt(parent_node, 2)
 
         if state == 3:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("save")
                 self.next_token()
                 state = 4
             else:
@@ -694,7 +612,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ")"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 4
 
         if state == 4:
@@ -709,12 +626,10 @@ class parser:
                 if self.look_ahead in follow["Statement"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Statement"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 5
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Selection_stmt(parent_node, 4)
 
@@ -730,30 +645,32 @@ class parser:
                 if self.look_ahead in follow["Else-stmt"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Else-stmt"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 6
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Selection_stmt(parent_node, 5)
 
     def Else_stmt(self, parent_node, state=0):
-        # state = 0
+
         if state == 0:
             if self.look_ahead == "endif":
+                self.code_generator.code_gen("jp")
+                #TODO
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "else":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("jpf")
                 self.next_token()
                 state = 2
         if state == 2:
             if self.look_ahead in first["Statement"]:
                 node = Node("Statement", parent_node)
                 self.Statement(node)
+                self.code_generator.code_gen("jp")
                 state = 3
             else:
                 if self.EOF_error():
@@ -762,12 +679,10 @@ class parser:
                 if self.look_ahead in follow["Statement"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Statement"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 3
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Else_stmt(parent_node, 2)
         if state == 3:
@@ -781,15 +696,14 @@ class parser:
 
                 error_msg = "#" + str(str(self.scanner.line_num)) + " : syntax error, missing " + "endif"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 4
 
     def Iteration_stmt(self, parent_node, state=0):
 
-        # state = 0
         if state == 0:
             if self.look_ahead == "repeat":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("label")
                 self.next_token()
                 state = 1
         if state == 1:
@@ -804,12 +718,10 @@ class parser:
                 if self.look_ahead in follow["Statement"]:
                     error_msg = "#" + str(str(self.scanner.line_num)) + " : syntax error, missing " + "Statement"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(str(self.scanner.line_num)) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Iteration_stmt(parent_node, 1)
         if state == 2:
@@ -823,7 +735,6 @@ class parser:
 
                 error_msg = "#" + str(str(self.scanner.line_num)) + " : syntax error, missing " + "until"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
         if state == 3:
             if self.look_ahead == "(":
@@ -836,7 +747,6 @@ class parser:
 
                 error_msg = "#" + str(str(self.scanner.line_num)) + " : syntax error, missing " + "("
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 4
         if state == 4:
             if self.look_ahead in first["Expression"]:
@@ -850,17 +760,16 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 5
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Iteration_stmt(parent_node, 4)
         if state == 5:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("until")
                 self.next_token()
                 state = 6
             else:
@@ -869,10 +778,8 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ")"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 6
 
-    #####unexpected
     def Return_stmt(self, parent_node, state=0):
         # state = 0
         if state == 0:
@@ -892,25 +799,24 @@ class parser:
                 if self.look_ahead in follow["Return-stmt-prime"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Return-stmt-prime"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Return_stmt(parent_node, 1)
 
     def Return_stmt_prime(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead == ";":
+                self.code_generator.code_gen("_return")
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
+                self.code_generator.code_gen("return_value")
                 state = 2
 
         if state == 2:
@@ -924,11 +830,9 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ";"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 1
 
     def Expression(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Simple-expression-zegond"]:
                 node = Node("Simple-expression-zegond", parent_node)
@@ -936,6 +840,7 @@ class parser:
                 state = 1
 
             elif self.look_ahead == "ID":
+                self.code_generator.code_gen("pid",self.cpl_token[1],self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
@@ -951,18 +856,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Expression(parent_node, 2)
 
-                # ##print(self.look_ahead)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "B"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 3
-
     def B(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead == "=":
                 node = Node(self.token, parent_node)
@@ -990,18 +887,17 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 3
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.B(parent_node, 2)
 
         if state == 3:
             if self.look_ahead == "]":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("address_array")
                 self.next_token()
                 state = 4
             else:
@@ -1010,7 +906,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "]"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 4
 
         if state == 4:
@@ -1024,20 +919,14 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.B(parent_node, 4)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "H"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 5
 
         if state == 5:
-            # ##print("expresisin ", self.look_ahead , str(self.scanner.line_num) , self.token)
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
-                # ##print("node added")
                 self.Expression(node)
+                self.code_generator.code_gen("assign",self.scanner.line_num)
                 state = 1
             else:
                 if self.EOF_error():
@@ -1046,18 +935,15 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 1
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.B(parent_node, 5)
 
     def H(self, parent_node, state=0):
-        # state = 0
-        print("in H ", self.look_ahead)
+
         if state == 0:
             if self.look_ahead == "=":
                 node = Node(self.token, parent_node)
@@ -1079,13 +965,8 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.H(parent_node, 2)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "D"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 3
 
         if state == 3:
             if self.look_ahead in first["C"] or self.look_ahead in follow["C"]:
@@ -1098,18 +979,14 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.H(parent_node, 3)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "C"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 4
 
         if state == 4:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
+                self.code_generator.code_gen("assign",self.scanner.line_num)
                 state = 1
             else:
                 if self.EOF_error():
@@ -1118,17 +995,14 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 5
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.H(parent_node, 4)
 
     def Simple_expression_zegond(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Additive-expression-zegond"]:
                 node = Node("Additive-expression-zegond", parent_node)
@@ -1145,16 +1019,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Simple_expression_zegond(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "C"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def Simple_expression_prime(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Additive-expression-prime"] or self.look_ahead in follow[
                 "Additive-expression-prime"]:
@@ -1172,30 +1040,25 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Simple_expression_prime(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "C"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def C(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Relop"]:
+                self.code_generator.code_gen('operator', self.cpl_token[1])
                 node = Node("Relop", parent_node)
                 self.Relop(node)
                 state = 1
             else:
                 node = Node("epsilon", parent_node)
                 state = 2
-            # elif epsilon
 
         if state == 1:
             if self.look_ahead in first["Additive-expression"]:
                 node = Node("Additive-expression", parent_node)
                 self.Additive_expression(node)
+                self.code_generator.code_gen("relop",self.scanner.line_num)
                 state = 2
             else:
                 if self.EOF_error():
@@ -1204,17 +1067,14 @@ class parser:
                 if self.look_ahead in follow["Additive-expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Additive-expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.C(parent_node, 1)
 
     def Additive_expression(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Term"]:
                 node = Node("Term", parent_node)
@@ -1232,16 +1092,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Additive_expression(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "D"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def Additive_expression_prime(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Term-prime"] or self.look_ahead in follow["Term-prime"]:
                 node = Node("Term-prime", parent_node)
@@ -1259,16 +1113,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Additive_expression_prime(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "D"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def Additive_expression_zegond(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Term-zegond"]:
                 node = Node("Term-zegond", parent_node)
@@ -1286,16 +1134,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Additive_expression_zegond(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "D"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def Term(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Factor"]:
                 node = Node("Factor", parent_node)
@@ -1313,16 +1155,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Term(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "G"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def Term_prime(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Factor-prime"] or self.look_ahead in follow["Factor-prime"]:
                 node = Node("Factor-prime", parent_node)
@@ -1340,16 +1176,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Term_prime(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "G"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def Term_zegond(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Factor-zegond"]:
                 node = Node("Factor-zegond", parent_node)
@@ -1367,17 +1197,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Term_zegond(parent_node, 1)
 
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "G"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
-
     def G(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead == "*":
                 node = Node(self.token, parent_node)
@@ -1392,6 +1215,8 @@ class parser:
             if self.look_ahead in first["Factor"]:
                 node = Node("Factor", parent_node)
                 self.Factor(node)
+                self.code_generator.code_gen("mult",self.scanner.line_num)
+
                 state = 2
             else:
                 if self.EOF_error():
@@ -1400,12 +1225,10 @@ class parser:
                 if self.look_ahead in follow["Factor"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Factor"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.G(parent_node, 1)
 
@@ -1420,27 +1243,23 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.G(parent_node, 2)
 
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "G"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 3
 
     def Factor(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead == "(":
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "NUM":
+                self.code_generator.code_gen("pnum",self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
             elif self.look_ahead == "ID":
+                self.code_generator.code_gen("pid",self.cpl_token[1],self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
@@ -1457,12 +1276,10 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Factor(parent_node, 1)
 
@@ -1477,7 +1294,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ")"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
 
         if state == 4:
@@ -1491,18 +1307,14 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Factor(parent_node, 4)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Var-call-prime"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 3
 
     def Var_call_prime(self, parent_node, state=0):
-        # state = 0
+
         if state == 0:
             if self.look_ahead == "(":
+                self.code_generator.code_gen("start_function_call")
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
@@ -1522,18 +1334,13 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Var_call_prime(parent_node, 1)
-
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Args"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
         if state == 2:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("function_call",self.scanner.line_num)
                 self.next_token()
                 state = 3
             else:
@@ -1542,17 +1349,15 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ")"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
 
     def Var_prime(self, parent_node, state=0):
-        # state = 0
+
         if state == 0:
             if self.look_ahead == "[":
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
-            # eps
             else:
                 state = 3
                 node = Node("epsilon", parent_node)
@@ -1569,18 +1374,17 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Var_prime(parent_node, 1)
 
         if state == 2:
             if self.look_ahead == "]":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("address_array")
                 self.next_token()
                 state = 3
             else:
@@ -1589,17 +1393,15 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "]"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
 
     def Factor_prime(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead == "(":
+                self.code_generator.code_gen("start_function_call")
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
-            # eps
             else:
                 state = 3
                 node = Node("epsilon", parent_node)
@@ -1615,17 +1417,13 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Factor_prime(parent_node, 1)
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Args"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
         if state == 2:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("function_call",self.scanner.line_num)
                 self.next_token()
                 state = 3
             else:
@@ -1634,17 +1432,17 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ")"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
 
     def Factor_zegond(self, parent_node, state=0):
-        # state = 0
+
         if state == 0:
             if self.look_ahead == "(":
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "NUM":
+                self.code_generator.code_gen("pnum",self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
@@ -1661,12 +1459,10 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Factor_zegond(parent_node, 1)
 
@@ -1681,11 +1477,9 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ")"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
 
     def Args(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Arg-list"]:
                 node = Node("Arg-list", parent_node)
@@ -1695,10 +1489,7 @@ class parser:
                 state = 1
                 node = Node("epsilon", parent_node)
 
-            # 3ps
-
     def Arg_list(self, parent_node, state=0):
-        # state = 0
         if state == 0:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
@@ -1715,14 +1506,8 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Arg_list(parent_node, 1)
-
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Arg-list-prime"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 2
 
     def Arg_list_prime(self, parent_node, state=0):
         # state = 0
@@ -1748,12 +1533,10 @@ class parser:
                 if self.look_ahead in follow["Expression"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Expression"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.Arg_list_prime(parent_node, 1)
 
@@ -1768,20 +1551,14 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.Arg_list_prime(parent_node, 2)
 
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Arg-list-prime"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 3
-
     def D(self, parent_node, state=0):
 
-        # state = 0
         if state == 0:
             if self.look_ahead in first['Addop']:
+                self.code_generator.code_gen('operator', self.cpl_token[1])
                 node = Node('Addop', parent_node)
                 self.Addop(node)
                 state = 1
@@ -1794,6 +1571,7 @@ class parser:
             if self.look_ahead in first['Term']:
                 node = Node('Term', parent_node)
                 self.Term(node)
+                self.code_generator.code_gen("add_or_sub",self.scanner.line_num)
                 state = 2
             else:
                 if self.EOF_error():
@@ -1802,12 +1580,10 @@ class parser:
                 if self.look_ahead in follow["Term"]:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "Term"
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     state = 2
                 else:
                     error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                     self.syn_err_l.append(error_msg)
-                    ##print(error_msg)
                     self.next_token()
                     self.D(parent_node, 1)
 
@@ -1822,25 +1598,22 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, illegal " + self.look_ahead
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 self.next_token()
                 self.D(parent_node, 2)
 
-                # error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "D"
-                # self.syn_err_l.append(error_msg)
-                # ##print(error_msg)
-                # state = 3
-
     def Declaration_initial(self, parent_node, state=0):
 
-        # state = 0
         if state == 0:
+            self.code_generator.code_gen("type", self.cpl_token[1])
             if self.look_ahead in first['Type-specifier']:
                 node = Node('Type-specifier', parent_node)
                 self.Type_specifier(node)
                 state = 1
 
         if state == 1:
+
+            self.code_generator.code_gen("define_id",self.cpl_token[1])
+
             if self.look_ahead == 'ID':
                 node = Node(self.token, parent_node)
                 self.next_token()
@@ -1851,13 +1624,10 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "ID"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 2
 
     def Param_prime(self, parent_node, state=0):
 
-        # state = 0
-        print("in param ptime dasd", self.look_ahead)
         if state == 0:
             if self.look_ahead == '[':
                 node = Node(self.token, parent_node)
@@ -1871,6 +1641,7 @@ class parser:
         if state == 1:
             if self.look_ahead == ']':
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("array_input")
                 self.next_token()
                 state = 2
             else:
@@ -1879,23 +1650,25 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "]"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 2
 
     def Var_declaration_prime(self, parent_node, state=0):
-        # state = 0
         if state == 0:
 
             if self.look_ahead == ';':
+                self.code_generator.code_gen('check_type',self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
+                self.code_generator.code_gen("pop")
                 state = 1
             elif self.look_ahead == '[':
+                self.code_generator.code_gen('check_type',self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
         if state == 2:
             if self.look_ahead == 'NUM':
+                self.code_generator.code_gen("pnum",self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
@@ -1905,12 +1678,12 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "NUM"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 3
 
         if state == 3:
             if self.look_ahead == ']':
                 node = Node(self.token, parent_node)
+                self.code_generator.code_gen("save_array")
                 self.next_token()
                 state = 4
             else:
@@ -1919,7 +1692,6 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + "]"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 4
 
         if state == 4:
@@ -1933,26 +1705,20 @@ class parser:
 
                 error_msg = "#" + str(self.scanner.line_num) + " : syntax error, missing " + ";"
                 self.syn_err_l.append(error_msg)
-                ##print(error_msg)
                 state = 5
 
     def Type_specifier(self, parent_node, state=0):
-        # state = 0
-        # if state == 0:
         if self.look_ahead == 'int' or self.look_ahead == 'void':
             node = Node(self.token, parent_node)
             self.next_token()
 
     def Relop(self, parent_node, state=0):
-        # # state = 0
-        # if state == 0:
+
         if self.look_ahead == '<' or self.look_ahead == '==':
             node = Node(self.token, parent_node)
             self.next_token()
 
     def Addop(self, parent_node, state=0):
-        # state = 0
-        # if state == 0:
 
         if self.look_ahead == '-' or self.look_ahead == '+':
             node = Node(self.token, parent_node)

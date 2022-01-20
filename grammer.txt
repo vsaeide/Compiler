@@ -1,0 +1,79 @@
+1. Program -> Declaration-list $ #jmf_main
+2. Declaration-list -> Declaration Declaration-list
+	EPSILON
+3. Declaration -> Declaration-initial Declaration-prime
+4. Declaration-initial -> #type Type-specifier #id ID
+5. Declaration-prime -> # start_func Fun-declaration-prime
+	#check_type Var-declaration-prime
+6. Var-declaration-prime -> ; #pop
+	[ #pnum NUM ] #save_arr ;
+7. Fun-declaration-prime -> ( Params ) #define_func Compound-stmt #edn_func
+8. Type-specifier -> int 
+	void
+9. Params -> #type int #id ID #add_param Param-prime Param-list
+	#type void #???pop
+10. Param-list -> , Param #add_param Param-list
+	EPSILON
+11. Param -> Declaration-initial Param-prime
+12. Param-prime -> [ ] #array_input
+	EPSILON #var_input #cancel
+13. Compound-stmt -> { Declaration-list Statement-list }
+14. Statement-list -> Statement Statement-list 
+	EPSILON
+15. Statement -> Expression-stmt 
+	Compound-stmt 
+	Selection-stmt 
+	Iteration-stmt 
+	Return-stmt
+16. Expression-stmt -> Expression ; #pop
+	break #break ;
+	;
+17. Selection-stmt -> if ( Expression ) #save Statement Else-stmt
+18. Else-stmt -> #??jp endif
+	else #jpf Statement #jp endif
+19. Iteration-stmt -> repeat Statement until ( Expression ) #?????
+20. Return-stmt -> return Return-stmt-prime
+21. Return-stmt-prime -> #return ;
+	Expression #return_val ;
+22. Expression -> Simple-expression-zegond 
+	#pid ID B
+23. B -> = Expression #assign
+	[ Expression ] #addres_array H
+	Simple-expression-prime
+24. H -> = Expression #assign
+	G D C
+25. Simple-expression-zegond -> Additive-expression-zegond C
+26. Simple-expression-prime -> Additive-expression-prime C
+27. C -> Relop Additive-expression #relop
+	EPSILON
+28. Relop -> #relop_sign < #cacel
+	#relop_sign == #cancel
+29. Additive-expression -> Term D
+30. Additive-expression-prime -> Term-prime D
+31. Additive-expression-zegond -> Term-zegond D
+32. D -> Addop Term #add_or_sub D
+	EPSILON
+33. Addop -> + 
+	-
+34. Term -> Factor G
+35. Term-prime -> Factor-prime G
+36. Term-zegond -> Factor-zegond G
+37. G -> * Factor #mult G
+	EPSILON
+38. Factor -> ( Expression ) 
+	#pid ID Var-call-prime
+	#pnum NUM
+39. Var-call-prime -> #start_func_call( Args ) #func_call
+	Var-prime
+40. Var-prime -> [ Expression ] #address_array
+	EPSILON
+41. Factor-prime -> #start_func_call ( Args ) #func_call
+**********??? Factor_prime⟶ ( Args ) #output
+	EPSILON
+42. Factor-zegond -> ( Expression ) 
+	#pnum NUM
+43. Args -> Arg-list 
+	EPSILON
+44. Arg-list -> Expression Arg-list-prime
+45. Arg-list-prime -> , Expression Arg-list-prime 
+	EPSILON
