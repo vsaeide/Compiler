@@ -48,7 +48,7 @@ first= {
   'Term-prime': [ '(', '*', 'epsilon' ],
   'Term-zegond': [ '(', 'NUM' ],
   'G': [ 'epsilon', '*' ],
-  'Factor': [ '( ', 'ID', 'NUM' ],
+  'Factor': [ '(', 'ID', 'NUM' ],
   'Var-call-prime': [ '(', '[', 'epsilon' ],
   'Var-prime': [ 'epsilon', '[' ],
   'Factor-prime': [ 'epsilon', '(' ],

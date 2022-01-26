@@ -29,9 +29,9 @@
 	break #break ;
 	;
 17. Selection-stmt -> if ( Expression ) #save Statement Else-stmt
-18. Else-stmt -> #??jp endif
+18. Else-stmt -> #endif
 	else #jpf Statement #jp endif
-19. Iteration-stmt -> repeat Statement until ( Expression ) #?????
+19. Iteration-stmt -> #loop repeat #label Statement until ( Expression ) #until
 20. Return-stmt -> return Return-stmt-prime
 21. Return-stmt-prime -> #return ;
 	Expression #return_val ;

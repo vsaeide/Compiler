@@ -3,7 +3,7 @@ from Package1.First import first
 from Package1.Follow import follow
 from anytree import Node
 from anytree import RenderTree
-from code_generator import CodeGeneration
+from codegen import CodeGeneration
 
 
 class parser:
@@ -31,12 +31,14 @@ class parser:
         else:
             self.look_ahead = self.cpl_token[1]
             self.token = "(" + self.cpl_token[0] + ", " + self.cpl_token[1] + ")"
+        print("######################## " ,self.look_ahead)
 
     def EOF_error(self):
         if self.look_ahead == '$':
             error_msg = "#" + str(self.scanner.line_num - 1) + " : syntax error, Unexpected EOF"
             self.syn_err_l.append(error_msg)
-            self.output()
+            #self.output()
+            #TODO
             return True
         return False
 
@@ -63,6 +65,9 @@ class parser:
             for idx, l in enumerate(self.code_generator.pb):
                 if l != '':
                     file.write('{}\t{}\n'.format(idx, l))
+
+        with open("semantic_errors.txt", "w") as file:  # semantic errors file
+            file.write("The input program is semantically correct.")
 
     ###################################################################3
 
@@ -163,8 +168,8 @@ class parser:
             node = Node("Fun-declaration-prime", parent_node)
             self.Fun_declaration_prime(node)
         elif self.look_ahead in first["Var-declaration-prime"]:
-            #self.code_generator.code_gen("check_type",self.scanner.line_num)
-            #TODO?
+            self.code_generator.code_gen("check_type", self.scanner.line_num)
+            # TODO?
             node = Node("Var-declaration-prime", parent_node)
             self.Var_declaration_prime(node)
         else:
@@ -255,17 +260,17 @@ class parser:
     def Params(self, parent_node, state=0):
         if state == 0:
             if self.look_ahead == "int":
-                self.code_generator.code_gen("type",self.cpl_token[1])
+                self.code_generator.code_gen("type", self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
             elif self.look_ahead == "void":
-                self.code_generator.code_gen("type",self.cpl_token[1])
+                self.code_generator.code_gen("type", self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
                 self.code_generator.code_gen("pop")
-
+                # TODO
             else:
                 if self.EOF_error():
                     exit()
@@ -276,7 +281,7 @@ class parser:
 
         if state == 1:
             if self.look_ahead == "ID":
-                self.code_generator.code_gen("define_id",self.cpl_token[1])
+                self.code_generator.code_gen("define_id", self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
@@ -537,10 +542,12 @@ class parser:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
+                # bade : badesh
+                self.code_generator.code_gen("pop")
                 state = 1
             elif self.look_ahead == "break":
                 node = Node(self.token, parent_node)
-                self.code_generator.code_gen("break",self.scanner.line_num)
+                self.code_generator.code_gen("break", self.scanner.line_num)
                 self.next_token()
                 state = 1
             elif self.look_ahead == ";":
@@ -551,7 +558,6 @@ class parser:
         if state == 1:
             if self.look_ahead == ";":
                 node = Node(self.token, parent_node)
-                self.code_generator.code_gen("pop")
                 self.next_token()
                 state = 2
             else:
@@ -563,7 +569,7 @@ class parser:
                 state = 2
 
     def Selection_stmt(self, parent_node, state=0):
-        # state = 0
+
         if state == 0:
             if self.look_ahead == "if":
                 node = Node(self.token, parent_node)
@@ -656,8 +662,7 @@ class parser:
 
         if state == 0:
             if self.look_ahead == "endif":
-                self.code_generator.code_gen("jp")
-                #TODO
+                self.code_generator.code_gen("endif")
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
@@ -687,6 +692,7 @@ class parser:
                     self.Else_stmt(parent_node, 2)
         if state == 3:
             if self.look_ahead == "endif":
+                # self.code_generator.code_gen("endif")
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
@@ -702,6 +708,7 @@ class parser:
 
         if state == 0:
             if self.look_ahead == "repeat":
+                self.code_generator.code_gen("loop")
                 node = Node(self.token, parent_node)
                 self.code_generator.code_gen("label")
                 self.next_token()
@@ -840,7 +847,7 @@ class parser:
                 state = 1
 
             elif self.look_ahead == "ID":
-                self.code_generator.code_gen("pid",self.cpl_token[1],self.scanner.line_num)
+                self.code_generator.code_gen("pid", self.cpl_token[1], self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
@@ -926,7 +933,7 @@ class parser:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
-                self.code_generator.code_gen("assign",self.scanner.line_num)
+                self.code_generator.code_gen("assign", self.scanner.line_num)
                 state = 1
             else:
                 if self.EOF_error():
@@ -986,7 +993,7 @@ class parser:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
-                self.code_generator.code_gen("assign",self.scanner.line_num)
+                self.code_generator.code_gen("assign", self.scanner.line_num)
                 state = 1
             else:
                 if self.EOF_error():
@@ -1046,7 +1053,7 @@ class parser:
     def C(self, parent_node, state=0):
         if state == 0:
             if self.look_ahead in first["Relop"]:
-                self.code_generator.code_gen('operator', self.cpl_token[1])
+                self.code_generator.code_gen('operator', self.cpl_token[1])  # az koja umad?
                 node = Node("Relop", parent_node)
                 self.Relop(node)
                 state = 1
@@ -1058,7 +1065,7 @@ class parser:
             if self.look_ahead in first["Additive-expression"]:
                 node = Node("Additive-expression", parent_node)
                 self.Additive_expression(node)
-                self.code_generator.code_gen("relop",self.scanner.line_num)
+                self.code_generator.code_gen("relop", self.scanner.line_num)
                 state = 2
             else:
                 if self.EOF_error():
@@ -1205,20 +1212,23 @@ class parser:
             if self.look_ahead == "*":
                 node = Node(self.token, parent_node)
                 self.next_token()
+                print("next token is ", self.look_ahead)
                 state = 1
             # eps
             else:
                 node = Node("epsilon", parent_node)
                 state = 3
-
+        print(state , self.look_ahead)
         if state == 1:
+            print(state, self.look_ahead)
             if self.look_ahead in first["Factor"]:
+                print(self.look_ahead , "first")
                 node = Node("Factor", parent_node)
                 self.Factor(node)
-                self.code_generator.code_gen("mult",self.scanner.line_num)
-
+                self.code_generator.code_gen("mult", self.scanner.line_num)
                 state = 2
             else:
+                print("else")
                 if self.EOF_error():
                     exit()
 
@@ -1246,20 +1256,23 @@ class parser:
                 self.next_token()
                 self.G(parent_node, 2)
 
-
     def Factor(self, parent_node, state=0):
+
+        print("cur token is ", self.look_ahead , parent_node.name)
         if state == 0:
             if self.look_ahead == "(":
                 node = Node(self.token, parent_node)
+                print("dorost")
                 self.next_token()
                 state = 1
             elif self.look_ahead == "NUM":
-                self.code_generator.code_gen("pnum",self.cpl_token[1])
+                print("ghalat")
+                self.code_generator.code_gen("pnum", self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
             elif self.look_ahead == "ID":
-                self.code_generator.code_gen("pid",self.cpl_token[1],self.scanner.line_num)
+                self.code_generator.code_gen("pid", self.cpl_token[1], self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 4
@@ -1340,7 +1353,7 @@ class parser:
         if state == 2:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
-                self.code_generator.code_gen("function_call",self.scanner.line_num)
+                self.code_generator.code_gen("function_call", self.scanner.line_num)
                 self.next_token()
                 state = 3
             else:
@@ -1423,7 +1436,7 @@ class parser:
         if state == 2:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
-                self.code_generator.code_gen("function_call",self.scanner.line_num)
+                self.code_generator.code_gen("function_call", self.scanner.line_num)
                 self.next_token()
                 state = 3
             else:
@@ -1442,7 +1455,7 @@ class parser:
                 self.next_token()
                 state = 1
             elif self.look_ahead == "NUM":
-                self.code_generator.code_gen("pnum",self.cpl_token[1])
+                self.code_generator.code_gen("pnum", self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3
@@ -1571,7 +1584,7 @@ class parser:
             if self.look_ahead in first['Term']:
                 node = Node('Term', parent_node)
                 self.Term(node)
-                self.code_generator.code_gen("add_or_sub",self.scanner.line_num)
+                self.code_generator.code_gen("add_or_sub", self.scanner.line_num)
                 state = 2
             else:
                 if self.EOF_error():
@@ -1612,7 +1625,7 @@ class parser:
 
         if state == 1:
 
-            self.code_generator.code_gen("define_id",self.cpl_token[1])
+            self.code_generator.code_gen("define_id", self.cpl_token[1])
 
             if self.look_ahead == 'ID':
                 node = Node(self.token, parent_node)
@@ -1656,19 +1669,19 @@ class parser:
         if state == 0:
 
             if self.look_ahead == ';':
-                self.code_generator.code_gen('check_type',self.scanner.line_num)
+                self.code_generator.code_gen('check_type', self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 self.code_generator.code_gen("pop")
                 state = 1
             elif self.look_ahead == '[':
-                self.code_generator.code_gen('check_type',self.scanner.line_num)
+                self.code_generator.code_gen('check_type', self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
         if state == 2:
             if self.look_ahead == 'NUM':
-                self.code_generator.code_gen("pnum",self.cpl_token[1])
+                self.code_generator.code_gen("pnum", self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 3

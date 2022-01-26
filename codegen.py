@@ -14,7 +14,7 @@ class CodeGeneration:
         self.loop_scope_stack = Stack()
         self.current_scope = None
         self.pb = [''] * 500
-        #self.pb[0] = '(ASSIGN, #0, 500, )'
+        self.pb[0] = '(ASSIGN, #0, 500, )'
         self.data_index = 508
         self.temp_index = 2000
         self.main = 1
@@ -24,19 +24,19 @@ class CodeGeneration:
     def code_gen(self, action_symbol, token=None, line_num=None):
 
         self.counter+=1
-        print("####################################################3")
-        for h in range(self.index):
-            print(h+1 , self.pb[h])
-        print("stack is")
-        print(self.semantic_stack.stack)
-        print("symbol table")
-        print(self.symbol_table)
-
-        print("next action symbol is")
-        print(action_symbol)
+        # print("####################################################3")
+        # for h in range(self.index):
+        #     print(h , self.pb[h])
+        # print("stack is")
+        # print(self.semantic_stack.stack)
+        # print("symbol table")
+        # print(self.symbol_table)
+        #
+        # print("next action symbol is", "token is", token)
+        # print(action_symbol)
         # print(self.counter)
         # print(self.semantic_stack.stack)
-        # print(self.symbol_table)
+        #print(self.symbol_table)
 
         if action_symbol == 'pid':
             self.pid(token, line_num)
@@ -82,16 +82,17 @@ class CodeGeneration:
     def jp_main(self):
         line_num = self.symbol_table.find_symbol_by_name('main', None).starts_at
         t = self.pb[self.main - 1]
-        #self.pb[self.main - 1] = '(JP, {}, , )'.format(line_num - 2)
-        self.pb[self.main - 1] = '(JP, {}, , )'.format(line_num - 1)
+        self.pb[self.main - 1] = '(JP, {}, , )'.format(line_num - 2)
+        #self.pb[self.main - 1] = '(JP, {}, , )'.format(line_num - 1)
         self.pb[self.main] = t
 
     def start_function(self):
         function = self.symbol_table.symbols[-1]
         function.type = function.type + '_function'
-        # if self.symbol_table.is_first_function(function.name):
-        #     self.main = self.index
-        #     self.index += 1
+
+        if self.symbol_table.is_first_function(function.name):
+            self.main = self.index
+            self.index += 1
         #TODO
         self.current_scope = function.name
         self.symbol_table.new_symbol('return_' + function.name, function.address + 4, None, 0, self.index,
@@ -188,8 +189,13 @@ class CodeGeneration:
                             array = self.symbol_table.find_symbol_by_address(self.semantic_stack.top(),
                                                                              self.current_scope)
                             if array.type.endswith('_array') or array.type.endswith('_array_input'):
-                                start = 4 * array.length + self.semantic_stack.top()
-                                self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(start, param.address)
+                                #start = 4 * array.length + self.semantic_stack.top()
+                                #TODO
+                                #print(self.semantic_stack.top())
+                                start=self.semantic_stack.top()
+                                #self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(start, param.address)
+
+                                self.pb[self.index] = '(ASSIGN, {}, {}, )'.format("#"+str(start), param.address)
                             else:
                                 # self.semantic_checker.error('actual_and_formal_parameters_type_matching', line_num,
                                 #                             function.length - params.index(param), function.name,
@@ -286,14 +292,25 @@ class CodeGeneration:
 
     def save(self):
         self.semantic_stack.push(self.index)
+        # print("save ", self.index)
         self.index += 1
 
     def jpf(self):
-        self.pb[self.semantic_stack.top()] = '(JPF, {}, {}, )'.format(self.semantic_stack.get_from_top(1),
-                                                                      self.index + 1)
+        # print("in jpf")
+        # print(self.semantic_stack.top())
+        # print("**")
+        self.pb[self.semantic_stack.top()] = '(JPF, {}, {}, )'.format(self.semantic_stack.get_from_top(1),self.index + 1)
         self.semantic_stack.pop(2)
         self.semantic_stack.push(self.index)
         self.index += 1
+
+    def endif(self):
+        # print("*#")
+        # print(self.semantic_stack.top())
+        self.pb[self.semantic_stack.top()] = '(JPF, {}, {}, )'.format(self.semantic_stack.get_from_top(1),self.index)
+        self.semantic_stack.pop(2)
+        #self.index += 1
+
 
     def jp(self):
         self.pb[self.semantic_stack.top()] = '(JP, {}, , )'.format(self.index)
@@ -308,16 +325,12 @@ class CodeGeneration:
         self.index += 1
         self.semantic_stack.pop(2)
 
-    # def while_stmt(self):
-    #     self.pb[self.semantic_stack.top()] = '(JPF, {}, {}, )'.format(self.semantic_stack.get_from_top(1),
-    #                                                                   self.semantic_stack.get_from_top(2))
-    #     self.pb[self.index] = '(JP, {}, , )'.format(self.semantic_stack.get_from_top(2))
-    #     self.index += 1
-    #     self.semantic_stack.pop(3)
-    #     start = self.loop_scope_stack.top()
-    #     self.loop_scope_stack.pop(1)
-    #     self.pb[start] = '(JP, {}, , )'.format(start + 2)
-    #     self.pb[start + 1] = '(JP, {}, , )'.format(self.index)
+        ###############
+        start = self.loop_scope_stack.top()
+        self.loop_scope_stack.pop(1)
+        self.pb[start] = '(JP, {}, , )'.format(start + 2)
+        self.pb[start + 1] = '(JP, {}, , )'.format(self.index)
+
 
     def assign(self, line_num):
         par1_type = self.get_type(self.semantic_stack.top())
@@ -478,16 +491,6 @@ class CodeGeneration:
         self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(t, self.semantic_stack.get_from_top(2))
         self.index += 1
 
-    def for_stmt(self):
-        self.pb[self.semantic_stack.top()] = '(JPF, {}, {}, )'.format(self.semantic_stack.get_from_top(1),
-                                                                      self.index + 1)
-        self.pb[self.index] = '(JP, {}, , )'.format(self.semantic_stack.top() - 1)
-        self.index += 1
-        self.semantic_stack.pop(6)
-        start = self.loop_scope_stack.top()
-        self.loop_scope_stack.pop(1)
-        self.pb[start] = '(JP, {}, , )'.format(start + 2)
-        self.pb[start + 1] = '(JP, {}, , )'.format(self.index)
 
     def output(self):
         self.pb[self.index] = '(PRINT, {}, , )'.format(self.semantic_stack.top())
