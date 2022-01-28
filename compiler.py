@@ -1,12 +1,12 @@
 # saeede vahedi 96102664
 # sabrineh mokhtari 96110107
 
-from parser import parser
+from Parser import parser
 from anytree import RenderTree
 
 parser = parser()
 # print("hello")
-print(parser.code_generator.symbol_table)
+#print(parser.code_generator.symbol_table)
 parser.output()
 
 
