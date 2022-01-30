@@ -149,11 +149,7 @@ class CodeGenerator:
         function = self.symbol_table.find_symbol_by_name(self.semantic_stack.get_from_top(n_params), None)
         if function.length != n_params:
             print("error")
-            #self.semantic_checker.error('actual_and_formal_parameters_number_matching', line_num, function.name)
-            # self.semantic_stack.pop(n_params + 1)
-            # t = self.get_temp()
-            # self.semantic_stack.push(t)
-            # return
+
         else:
             if function.name != 'output':
                 params = self.symbol_table.find_function_parameters(function.name, function.length)
@@ -162,33 +158,18 @@ class CodeGenerator:
                     if param.type.endswith('_array_input'):
                         if isinstance(self.semantic_stack.top(), str):
                             print("error")
-                            # self.semantic_checker.error('actual_and_formal_parameters_type_matching', line_num,
-                            #                             function.length - params.index(param), function.name, 'array',
-                            #                             'int')
-                            # self.semantic_stack.pop(n_params - params.index(param) + 1)
-                            # t = self.get_temp()
-                            # self.semantic_stack.push(t)
-                            # return
+
                         else:
                             array = self.symbol_table.find_symbol_by_address(self.semantic_stack.top(),
                                                                              self.current_scope)
                             if array.type.endswith('_array') or array.type.endswith('_array_input'):
-                                #start = 4 * array.length + self.semantic_stack.top()
                                 #TODO
                                 start=self.semantic_stack.top()
-                                #self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(start, param.address)
 
                                 self.pb[self.index] = '(ASSIGN, {}, {}, )'.format("#"+str(start), param.address)
                             else:
                                 print("error")
-                                # self.semantic_checker.error('actual_and_formal_parameters_type_matching', line_num,
-                                #                             function.length - params.index(param), function.name,
-                                #                             'array',
-                                #                             'int')
-                                # self.semantic_stack.pop(n_params - params.index(param) + 1)
-                                # t = self.get_temp()
-                                # self.semantic_stack.push(t)
-                                # return
+
                     else:
                         if not isinstance(self.semantic_stack.top(), str) and self.semantic_stack.top() < 1000:
                             var = self.symbol_table.find_symbol_by_address(self.semantic_stack.top(),
@@ -204,13 +185,7 @@ class CodeGenerator:
                             self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(self.semantic_stack.top(), param.address)
                         else:
                             print("error")
-                            # self.semantic_checker.error('actual_and_formal_parameters_type_matching', line_num,
-                            #                             function.length - params.index(param), function.name, 'int',
-                            #                             'array')
-                            # self.semantic_stack.pop(n_params - params.index(param) + 1)
-                            # t = self.get_temp()
-                            # self.semantic_stack.push(t)
-                            # return
+
 
                     self.index += 1
                     self.semantic_stack.pop(1)
@@ -247,8 +222,7 @@ class CodeGenerator:
         symbol = self.symbol_table.symbols[-1]
         if symbol.type == 'void':
             print("error")
-            # self.semantic_checker.error('void_type', line_num, symbol.name)
-            #symbol.type = 'int'
+
 
     def pid(self, token, line_num):
         p = self.symbol_table.find_symbol_by_name(token, self.current_scope)
@@ -256,8 +230,6 @@ class CodeGenerator:
             self.semantic_stack.push(p.address)
         else:
             print("error")
-            # self.semantic_checker.error('scoping', line_num, token)
-            #self.semantic_stack.push(self.symbol_table.symbols[1].address)
 
     def pop(self):
         self.semantic_stack.pop()
@@ -373,88 +345,9 @@ class CodeGenerator:
         self.semantic_stack.push(t)
 
 
-    # def loop_size(self):
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(ASSIGN, #0, {}, )'.format(t)
-    #     self.index += 1
-    #     self.semantic_stack.push(t)
-
-    # def push_zero(self):
-    #     self.semantic_stack.push('#0')
-
-    # def count(self):
-    #     i = int(self.semantic_stack.get_from_top(1).replace('#', ''))
-    #     self.semantic_stack.push('#{}'.format(i + 1))
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(ADD, #1, {}, {})'.format(self.semantic_stack.get_from_top(2 * i + 4), t)
-    #     self.index += 1
-    #     self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(t, self.semantic_stack.get_from_top(2 * i + 4))
-    #     self.index += 1
-
-    # def assign_for(self):
-    #     array_size = int(self.semantic_stack.top().replace('#', ''))
-    #     start = -1
-    #     for i in range(array_size):
-    #         t = self.get_temp()
-    #         loop_var = self.semantic_stack.get_from_top(1)
-    #         self.pb[self.index] = '(ASSIGN, #{}, {}, )'.format(loop_var, t)
-    #         self.index += 1
-    #         self.semantic_stack.pop(2)
-    #         if i == array_size - 1:
-    #             start = t
-    #     self.semantic_stack.pop()
-    #     self.semantic_stack.push(start)
-
-    # def initial(self):
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(ASSIGN, #{}, {}, )'.format(self.semantic_stack.top(), t)
-    #     self.index += 1
-    #     self.semantic_stack.pop()
-    #     self.semantic_stack.push(t)
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(ASSIGN, #0, {}, )'.format(t)
-    #     self.index += 1
-    #     self.semantic_stack.push(t)
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(LT, {}, {}, {})'.format(self.semantic_stack.top(), self.semantic_stack.get_from_top(3),
-    #                                                     t)
-    #     self.index += 1
-    #     self.semantic_stack.push(t)
-
-    # def step(self):
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(ASSIGN, @{}, {}, )'.format(self.semantic_stack.get_from_top(3), t)
-    #     self.index += 1
-    #     self.pb[self.index] = '(ASSIGN, @{}, {}, )'.format(t, self.semantic_stack.get_from_top(4))
-    #     self.index += 1
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(SUB, {}, #4, {})'.format(self.semantic_stack.get_from_top(3), t)
-    #     self.index += 1
-    #     self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(t, self.semantic_stack.get_from_top(3))
-    #     self.index += 1
-    #     t = self.get_temp()
-    #     self.pb[self.index] = '(ADD, {}, #1, {})'.format(self.semantic_stack.get_from_top(2), t)
-    #     self.index += 1
-    #     self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(t, self.semantic_stack.get_from_top(2))
-    #     self.index += 1
-
 
     def output(self):
         self.pb[self.index] = '(PRINT, {}, , )'.format(self.semantic_stack.top())
         self.index += 1
         self.semantic_stack.pop(1)
 
-    # def get_type(self, par):
-    #     if isinstance(par, str):
-    #         return 'int'
-    #     else:
-    #         if par >= 1000:
-    #             return 'int'
-    #         else:
-    #             par_symbol = self.symbol_table.find_symbol_by_address(par, self.current_scope)
-    #             if par_symbol.type == 'int':
-    #                 return 'int'
-    #             elif par_symbol.type == 'int_function':
-    #                 return 'function'
-    #             else:
-    #                 return 'array'
