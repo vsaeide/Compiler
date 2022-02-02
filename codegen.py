@@ -1,6 +1,6 @@
 from stack import Stack
-from symbolTable import *
-# from semantic_checker import *
+from symbol import *
+from semantic_error_handler import *
 
 
 class CodeGenerator:
@@ -9,9 +9,10 @@ class CodeGenerator:
         self.index = 0
         self.semantic_stack = Stack()
         self.symbol_table = SymbolTable()
+        self.semantic_checker = SemanticChecker()
 
-        self.symbol_table.new_symbol('output', 500, None, 1, 0, 'void')
-        self.symbol_table.new_symbol('temp', 504, None, 1, 0, 'int')
+        self.symbol_table.add_symbol('output', 500, None, 1, 0, 'void')
+        self.symbol_table.add_symbol('temp', 504, None, 1, 0, 'int')
         #TODO
 
         self.break_stack = Stack()
@@ -77,7 +78,7 @@ class CodeGenerator:
             self.index += 1
         #TODO
         self.current_scope = function.name
-        self.symbol_table.new_symbol('return_' + function.name, function.address + 4, None, 0, self.index,
+        self.symbol_table.add_symbol('return_' + function.name, function.address + 4, None, 0, self.index,
                                      function.type)
         self.pb[self.index] = '(ASSIGN, #0, {}, )'.format(self.data_index)
         self.data_index += 4
@@ -113,6 +114,8 @@ class CodeGenerator:
         if self.break_stack.size > 0:
             self.pb[self.index] = '(JP, {}, , )'.format(self.break_stack.top() + 1)
             self.index += 1
+        else:
+            self.semantic_checker.error('type_4', line_num)
 
 
     def _return(self):
@@ -148,16 +151,26 @@ class CodeGenerator:
 
         function = self.symbol_table.find_symbol_by_name(self.semantic_stack.get_from_top(n_params), None)
         if function.length != n_params:
-            print("error")
+            # print("error")
+            self.semantic_checker.error('type_3', line_num, function.name)
+            self.semantic_stack.pop(n_params + 1)
+            temp = self.get_temp()
+            self.semantic_stack.push(temp)
+            return
 
         else:
             if function.name != 'output':
-                params = self.symbol_table.find_function_parameters(function.name, function.length)
+                params = self.symbol_table.get_func_params(function.name, function.length)
                 params.reverse()
                 for param in params:
                     if param.type.endswith('_array_input'):
                         if isinstance(self.semantic_stack.top(), str):
-                            print("error")
+                            # print("error")
+                            self.semantic_checker.error('type_6', line_num, function.length - params.index(param), function.name, 'array', 'int')
+                            self.semantic_stack.pop(n_params - params.index(param) + 1)
+                            temp = self.get_temp()
+                            self.semantic_stack.push(temp)
+                            return
 
                         else:
                             array = self.symbol_table.find_symbol_by_address(self.semantic_stack.top(),
@@ -168,8 +181,12 @@ class CodeGenerator:
 
                                 self.pb[self.index] = '(ASSIGN, {}, {}, )'.format("#"+str(start), param.address)
                             else:
-                                print("error")
-
+                                # print("error")
+                                self.semantic_checker.error('type_6', line_num, function.length - params.index(param), function.name, 'array', 'int')
+                                self.semantic_stack.pop(n_params - params.index(param) + 1)
+                                temp = self.get_temp()
+                                self.semantic_stack.push(temp)
+                                return
                     else:
                         if not isinstance(self.semantic_stack.top(), str) and self.semantic_stack.top() < 1000:
                             var = self.symbol_table.find_symbol_by_address(self.semantic_stack.top(),
@@ -184,7 +201,12 @@ class CodeGenerator:
                                 (isinstance(var, str) and var[1:].isdigit()):
                             self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(self.semantic_stack.top(), param.address)
                         else:
-                            print("error")
+                            # print("error")
+                            self.semantic_checker.error('type_6', line_num,function.length - params.index(param), function.name, 'int', 'array')
+                            self.semantic_stack.pop(n_params - params.index(param) + 1)
+                            temp = self.get_temp()
+                            self.semantic_stack.push(temp)
+                            return
 
 
                     self.index += 1
@@ -212,7 +234,7 @@ class CodeGenerator:
     def define_id(self, token):
         t = self.semantic_stack.top()
         self.semantic_stack.pop(1)
-        self.symbol_table.new_symbol(token, self.data_index, self.current_scope, 0, self.index, t)
+        self.symbol_table.add_symbol(token, self.data_index, self.current_scope, 0, self.index, t)
         self.data_index += 4
         self.semantic_stack.push(self.symbol_table.symbols[-1].address)
         self.pb[self.index] = '(ASSIGN, #0, {}, )'.format(self.semantic_stack.top())
@@ -221,7 +243,9 @@ class CodeGenerator:
     def check_type(self, line_num):
         symbol = self.symbol_table.symbols[-1]
         if symbol.type == 'void':
-            print("error")
+            # print("error")
+            self.semantic_checker.error('type_2', line_num, symbol.name)
+            symbol.type = 'int'
 
 
     def pid(self, token, line_num):
@@ -229,7 +253,9 @@ class CodeGenerator:
         if p != 'first':
             self.semantic_stack.push(p.address)
         else:
-            print("error")
+            # print("error")
+            self.semantic_checker.error('type_1', line_num, token)
+            self.semantic_stack.push(self.symbol_table.symbols[1].address)
 
     def pop(self):
         self.semantic_stack.pop()
@@ -287,6 +313,12 @@ class CodeGenerator:
 
 
     def assign(self, line_num):
+        type_1 = self.get_type(self.semantic_stack.top())
+        type_2 = self.get_type(self.semantic_stack.get_from_top(1))
+        if type_1 == 'array' or type_2 == 'array':
+            self.semantic_checker.error('type_5', line_num, 'array', 'int')
+        elif type_1 == 'function' or type_2 == 'function':
+            self.semantic_checker.error('type_5', line_num, 'function', 'int')
         self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(self.semantic_stack.top(),
                                                           self.semantic_stack.get_from_top(1))
         temp = self.semantic_stack.top()
@@ -309,6 +341,12 @@ class CodeGenerator:
         self.semantic_stack.push('@' + str(t))
 
     def relop(self, line_num):
+        type_1 = self.get_type(self.semantic_stack.top())
+        type_2 = self.get_type(self.semantic_stack.get_from_top(2))
+        if type_1 == 'array' or type_2 == 'array':
+            self.semantic_checker.error('type_5', line_num, 'array', 'int')
+        elif type_1 == 'function' or type_2 == 'function':
+            self.semantic_checker.error('type_5', line_num, 'function', 'int')
         addr = self.get_temp()
         if self.semantic_stack.get_from_top(1) == '<':
             self.pb[self.index] = '(LT, {}, {}, {})'.format(self.semantic_stack.get_from_top(2),
@@ -325,6 +363,12 @@ class CodeGenerator:
         self.semantic_stack.push(token)
 
     def add_or_sub(self, line_num):
+        type_1 = self.get_type(self.semantic_stack.top())
+        type_2 = self.get_type(self.semantic_stack.get_from_top(2))
+        if type_1 == 'array' or type_2 == 'array':
+            self.semantic_checker.error('type_5', line_num, 'array', 'int')
+        elif type_1 == 'function' or type_2 == 'function':
+            self.semantic_checker.error('type_5', line_num, 'function', 'int')
         t = self.get_temp()
         if self.semantic_stack.get_from_top(1) == '+':
             self.pb[self.index] = '(ADD, {}, {}, {})'.format(self.semantic_stack.top(),
@@ -337,6 +381,12 @@ class CodeGenerator:
         self.semantic_stack.push(t)
 
     def mult(self, line_num):
+        type_1 = self.get_type(self.semantic_stack.top())
+        type_2 = self.get_type(self.semantic_stack.get_from_top(1))
+        if type_1 == 'array' or type_2 == 'array':
+            self.semantic_checker.error('type_5', line_num, 'array', 'int')
+        elif type_1 == 'function' or type_2 == 'function':
+            self.semantic_checker.error('type_5', line_num, 'function', 'int')
         t = self.get_temp()
         self.pb[self.index] = '(MULT, {}, {}, {})'.format(self.semantic_stack.top(),
                                                           self.semantic_stack.get_from_top(1), t)
@@ -350,4 +400,19 @@ class CodeGenerator:
         self.pb[self.index] = '(PRINT, {}, , )'.format(self.semantic_stack.top())
         self.index += 1
         self.semantic_stack.pop(1)
+
+    def get_type(self, param):
+        if isinstance(param, str):
+            return 'int'
+        else:
+            if param >= 1000:
+                return 'int'
+            else:
+                par_symbol = self.symbol_table.find_symbol_by_address(param, self.current_scope)
+                if par_symbol.type == 'int':
+                    return 'int'
+                elif par_symbol.type == 'int_function':
+                    return 'function'
+                else:
+                    return 'array'
 
