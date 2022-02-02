@@ -61,12 +61,17 @@ class parser:
         #             file.write(l + "\n")
 
         with open("output.txt", 'w') as file:
-            for idx, l in enumerate(self.code_generator.pb):
-                if l != '':
-                    file.write('{}\t{}\n'.format(idx, l))
+            if len(self.code_generator.semantic_checker.errors) > 0:
+                file.write('The output code has not been generated')
+            else:
+                for idx, l in enumerate(self.code_generator.pb):
+                    if l != '':
+                        file.write('{}\t{}\n'.format(idx, l))
 
         with open("semantic_errors.txt", "w") as file:  # semantic errors file
-            file.write("The input program is semantically correct.")
+            for err in self.code_generator.semantic_checker.errors:
+                # print(self.code_generator.semantic_checker.errors)
+                file.write(err)
 
     ###################################################################3
 
@@ -167,7 +172,7 @@ class parser:
             node = Node("Fun-declaration-prime", parent_node)
             self.Fun_declaration_prime(node)
         elif self.look_ahead in first["Var-declaration-prime"]:
-            self.code_generator.code_gen("check_type", self.scanner.line_num)
+            self.code_generator.code_gen(action_symbol="check_type", line_num=self.scanner.line_num)
             # TODO?
             node = Node("Var-declaration-prime", parent_node)
             self.Var_declaration_prime(node)
@@ -546,7 +551,7 @@ class parser:
                 state = 1
             elif self.look_ahead == "break":
                 node = Node(self.token, parent_node)
-                self.code_generator.code_gen("break", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="break", line_num=self.scanner.line_num)
                 self.next_token()
                 state = 1
             elif self.look_ahead == ";":
@@ -932,7 +937,7 @@ class parser:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
-                self.code_generator.code_gen("assign", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="assign", line_num=self.scanner.line_num)
                 state = 1
             else:
                 if self.EOF_error():
@@ -992,7 +997,7 @@ class parser:
             if self.look_ahead in first["Expression"]:
                 node = Node("Expression", parent_node)
                 self.Expression(node)
-                self.code_generator.code_gen("assign", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="assign", line_num=self.scanner.line_num)
                 state = 1
             else:
                 if self.EOF_error():
@@ -1052,7 +1057,7 @@ class parser:
     def C(self, parent_node, state=0):
         if state == 0:
             if self.look_ahead in first["Relop"]:
-                self.code_generator.code_gen('operator', self.cpl_token[1])  # az koja umad?
+                self.code_generator.code_gen('operator', self.cpl_token[1], self.scanner.line_num)  # az koja umad?
                 node = Node("Relop", parent_node)
                 self.Relop(node)
                 state = 1
@@ -1064,7 +1069,7 @@ class parser:
             if self.look_ahead in first["Additive-expression"]:
                 node = Node("Additive-expression", parent_node)
                 self.Additive_expression(node)
-                self.code_generator.code_gen("relop", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="relop", line_num=self.scanner.line_num)
                 state = 2
             else:
                 if self.EOF_error():
@@ -1220,7 +1225,7 @@ class parser:
             if self.look_ahead in first["Factor"]:
                 node = Node("Factor", parent_node)
                 self.Factor(node)
-                self.code_generator.code_gen("mult", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="mult", line_num=self.scanner.line_num)
                 state = 2
             else:
                 if self.EOF_error():
@@ -1318,7 +1323,7 @@ class parser:
 
         if state == 0:
             if self.look_ahead == "(":
-                self.code_generator.code_gen("start_function_call")
+                self.code_generator.code_gen("start_function_call", self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 1
@@ -1344,7 +1349,7 @@ class parser:
         if state == 2:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
-                self.code_generator.code_gen("function_call", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="function_call", line_num=self.scanner.line_num)
                 self.next_token()
                 state = 3
             else:
@@ -1427,7 +1432,7 @@ class parser:
         if state == 2:
             if self.look_ahead == ")":
                 node = Node(self.token, parent_node)
-                self.code_generator.code_gen("function_call", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="function_call", line_num=self.scanner.line_num)
                 self.next_token()
                 state = 3
             else:
@@ -1575,7 +1580,7 @@ class parser:
             if self.look_ahead in first['Term']:
                 node = Node('Term', parent_node)
                 self.Term(node)
-                self.code_generator.code_gen("add_or_sub", self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol="add_or_sub", line_num=self.scanner.line_num)
                 state = 2
             else:
                 if self.EOF_error():
@@ -1660,13 +1665,13 @@ class parser:
         if state == 0:
 
             if self.look_ahead == ';':
-                self.code_generator.code_gen('check_type', self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol='check_type', line_num=self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 self.code_generator.code_gen("pop")
                 state = 1
             elif self.look_ahead == '[':
-                self.code_generator.code_gen('check_type', self.scanner.line_num)
+                self.code_generator.code_gen(action_symbol='check_type', line_num=self.scanner.line_num)
                 node = Node(self.token, parent_node)
                 self.next_token()
                 state = 2
