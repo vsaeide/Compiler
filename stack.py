@@ -10,7 +10,6 @@ class Stack:
         self.size -= num
 
     def push(self, key):
-        #self.stack += [key]
         self.stack.append(key)
         self.size += 1
 

@@ -3,7 +3,7 @@ from Package1.First import first
 from Package1.Follow import follow
 from anytree import Node
 from anytree import RenderTree
-from codegen import CodeGeneration
+from codegen import CodeGenerator
 
 
 class parser:
@@ -15,7 +15,7 @@ class parser:
         self.state = 0
         self.root = Node("Program")
         self.next_token()
-        self.code_generator = CodeGeneration()
+        self.code_generator = CodeGenerator()
         self.Program(self.root)
 
     def next_token(self):
@@ -31,7 +31,6 @@ class parser:
         else:
             self.look_ahead = self.cpl_token[1]
             self.token = "(" + self.cpl_token[0] + ", " + self.cpl_token[1] + ")"
-        print("######################## " ,self.look_ahead)
 
     def EOF_error(self):
         if self.look_ahead == '$':
@@ -1212,23 +1211,18 @@ class parser:
             if self.look_ahead == "*":
                 node = Node(self.token, parent_node)
                 self.next_token()
-                print("next token is ", self.look_ahead)
                 state = 1
             # eps
             else:
                 node = Node("epsilon", parent_node)
                 state = 3
-        print(state , self.look_ahead)
         if state == 1:
-            print(state, self.look_ahead)
             if self.look_ahead in first["Factor"]:
-                print(self.look_ahead , "first")
                 node = Node("Factor", parent_node)
                 self.Factor(node)
                 self.code_generator.code_gen("mult", self.scanner.line_num)
                 state = 2
             else:
-                print("else")
                 if self.EOF_error():
                     exit()
 
@@ -1258,15 +1252,12 @@ class parser:
 
     def Factor(self, parent_node, state=0):
 
-        print("cur token is ", self.look_ahead , parent_node.name)
         if state == 0:
             if self.look_ahead == "(":
                 node = Node(self.token, parent_node)
-                print("dorost")
                 self.next_token()
                 state = 1
             elif self.look_ahead == "NUM":
-                print("ghalat")
                 self.code_generator.code_gen("pnum", self.cpl_token[1])
                 node = Node(self.token, parent_node)
                 self.next_token()

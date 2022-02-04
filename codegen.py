@@ -1,48 +1,35 @@
 from stack import Stack
-from symbol_table import *
+from symbolTable import *
 # from semantic_checker import *
 
 
-class CodeGeneration:
+class CodeGenerator:
     def __init__(self):
-        self.counter=0
+
         self.index = 0
         self.semantic_stack = Stack()
         self.symbol_table = SymbolTable()
+
         self.symbol_table.new_symbol('output', 500, None, 1, 0, 'void')
-        self.symbol_table.new_symbol('dummydummydummydummydummydummydummydummy', 504, None, 1, 0, 'int')
-        self.loop_scope_stack = Stack()
+        self.symbol_table.new_symbol('temp', 504, None, 1, 0, 'int')
+        #TODO
+
+        self.break_stack = Stack()
         self.current_scope = None
         self.pb = [''] * 500
         self.pb[0] = '(ASSIGN, #0, 500, )'
         self.data_index = 508
         self.temp_index = 2000
-        self.main = 1
-        # self.semantic_checker = SemanticChecker()
+        self.main_index = 1
 
 
     def code_gen(self, action_symbol, token=None, line_num=None):
-
-        self.counter+=1
-        # print("####################################################3")
-        # for h in range(self.index):
-        #     print(h , self.pb[h])
-        # print("stack is")
-        # print(self.semantic_stack.stack)
-        # print("symbol table")
-        # print(self.symbol_table)
-        #
-        # print("next action symbol is", "token is", token)
-        # print(action_symbol)
-        # print(self.counter)
-        # print(self.semantic_stack.stack)
-        #print(self.symbol_table)
 
         if action_symbol == 'pid':
             self.pid(token, line_num)
         elif action_symbol == 'pnum':
             self.pnum(token)
-        elif action_symbol == 'operator': # nist?
+        elif action_symbol == 'operator':
             self.operator(token)
         elif action_symbol == 'type':
             self.type(token)
@@ -52,8 +39,6 @@ class CodeGeneration:
             self._break(line_num)
         elif action_symbol == 'assign':
             self.assign(line_num)
-        elif action_symbol == 'signed_num': # nadaram
-            self.signed_num(line_num)
         elif action_symbol == 'mult':
             self.mult(line_num)
         elif action_symbol == 'check_type':
@@ -70,28 +55,25 @@ class CodeGeneration:
 
 
     def get_temp(self):
-        res = self.temp_index
-        self.temp_index += 4
-        return res
-
-    def find_temp(self):
         temp = self.temp_index
-        self.temp_index += 1
+        self.temp_index += 4
         return temp
 
+
     def jp_main(self):
-        line_num = self.symbol_table.find_symbol_by_name('main', None).starts_at
-        t = self.pb[self.main - 1]
-        self.pb[self.main - 1] = '(JP, {}, , )'.format(line_num - 2)
-        #self.pb[self.main - 1] = '(JP, {}, , )'.format(line_num - 1)
-        self.pb[self.main] = t
+
+        line_num = self.symbol_table.find_symbol_by_name('main', None).line_number
+        temp = self.pb[self.main_index - 1]
+        self.pb[self.main_index - 1] = '(JP, {}, , )'.format(line_num - 2)
+        self.pb[self.main_index] = temp
 
     def start_function(self):
+
         function = self.symbol_table.symbols[-1]
         function.type = function.type + '_function'
 
         if self.symbol_table.is_first_function(function.name):
-            self.main = self.index
+            self.main_index = self.index
             self.index += 1
         #TODO
         self.current_scope = function.name
@@ -103,10 +85,10 @@ class CodeGeneration:
 
     def define_function(self):
         function = self.symbol_table.find_symbol_by_name(self.current_scope, None)
-        function.starts_at = self.index
+        function.line_number = self.index
 
     def loop(self):
-        self.loop_scope_stack.push(self.index)
+        self.break_stack.push(self.index)
         self.index += 2
 
     def end_function(self):
@@ -128,11 +110,10 @@ class CodeGeneration:
         self.symbol_table.symbols[-1].type = self.symbol_table.symbols[-1].type + '_array_input'
 
     def _break(self, line_num):
-        if self.loop_scope_stack.size > 0:
-            self.pb[self.index] = '(JP, {}, , )'.format(self.loop_scope_stack.top() + 1)
+        if self.break_stack.size > 0:
+            self.pb[self.index] = '(JP, {}, , )'.format(self.break_stack.top() + 1)
             self.index += 1
-        # else:
-        #     self.semantic_checker.error('break_statement', line_num)
+
 
     def _return(self):
         function_return = self.symbol_table.find_symbol_by_name('return_' + self.current_scope, None)
@@ -164,13 +145,11 @@ class CodeGeneration:
                 (isinstance(self.semantic_stack.get_from_top(n_params), str) and
                  self.semantic_stack.get_from_top(n_params).startswith('@')):
             n_params += 1
+
         function = self.symbol_table.find_symbol_by_name(self.semantic_stack.get_from_top(n_params), None)
         if function.length != n_params:
-            #self.semantic_checker.error('actual_and_formal_parameters_number_matching', line_num, function.name)
-            self.semantic_stack.pop(n_params + 1)
-            t = self.get_temp()
-            self.semantic_stack.push(t)
-            return
+            print("error")
+
         else:
             if function.name != 'output':
                 params = self.symbol_table.find_function_parameters(function.name, function.length)
@@ -178,33 +157,19 @@ class CodeGeneration:
                 for param in params:
                     if param.type.endswith('_array_input'):
                         if isinstance(self.semantic_stack.top(), str):
-                            # self.semantic_checker.error('actual_and_formal_parameters_type_matching', line_num,
-                            #                             function.length - params.index(param), function.name, 'array',
-                            #                             'int')
-                            self.semantic_stack.pop(n_params - params.index(param) + 1)
-                            t = self.get_temp()
-                            self.semantic_stack.push(t)
-                            return
+                            print("error")
+
                         else:
                             array = self.symbol_table.find_symbol_by_address(self.semantic_stack.top(),
                                                                              self.current_scope)
                             if array.type.endswith('_array') or array.type.endswith('_array_input'):
-                                #start = 4 * array.length + self.semantic_stack.top()
                                 #TODO
-                                #print(self.semantic_stack.top())
                                 start=self.semantic_stack.top()
-                                #self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(start, param.address)
 
                                 self.pb[self.index] = '(ASSIGN, {}, {}, )'.format("#"+str(start), param.address)
                             else:
-                                # self.semantic_checker.error('actual_and_formal_parameters_type_matching', line_num,
-                                #                             function.length - params.index(param), function.name,
-                                #                             'array',
-                                #                             'int')
-                                self.semantic_stack.pop(n_params - params.index(param) + 1)
-                                t = self.get_temp()
-                                self.semantic_stack.push(t)
-                                return
+                                print("error")
+
                     else:
                         if not isinstance(self.semantic_stack.top(), str) and self.semantic_stack.top() < 1000:
                             var = self.symbol_table.find_symbol_by_address(self.semantic_stack.top(),
@@ -214,22 +179,20 @@ class CodeGeneration:
                             var = self.semantic_stack.top()
                         else:
                             var = None
+
                         if (isinstance(var, Symbol) and var.type == 'int') or (isinstance(var, int)) or \
                                 (isinstance(var, str) and var[1:].isdigit()):
                             self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(self.semantic_stack.top(), param.address)
                         else:
-                            # self.semantic_checker.error('actual_and_formal_parameters_type_matching', line_num,
-                            #                             function.length - params.index(param), function.name, 'int',
-                            #                             'array')
-                            self.semantic_stack.pop(n_params - params.index(param) + 1)
-                            t = self.get_temp()
-                            self.semantic_stack.push(t)
-                            return
+                            print("error")
+
+
                     self.index += 1
                     self.semantic_stack.pop(1)
+
                 self.pb[self.index] = '(ASSIGN, #{}, {}, )'.format(self.index + 2, function.address + 4)
                 self.index += 1
-                self.pb[self.index] = '(JP, {}, , )'.format(function.starts_at)
+                self.pb[self.index] = '(JP, {}, , )'.format(function.line_number)
                 self.index += 1
                 self.semantic_stack.pop(1)
                 if function.type == 'int_function':
@@ -258,16 +221,15 @@ class CodeGeneration:
     def check_type(self, line_num):
         symbol = self.symbol_table.symbols[-1]
         if symbol.type == 'void':
-            # self.semantic_checker.error('void_type', line_num, symbol.name)
-            symbol.type = 'int'
+            print("error")
+
 
     def pid(self, token, line_num):
         p = self.symbol_table.find_symbol_by_name(token, self.current_scope)
         if p != 'first':
             self.semantic_stack.push(p.address)
         else:
-            # self.semantic_checker.error('scoping', line_num, token)
-            self.semantic_stack.push(self.symbol_table.symbols[1].address)
+            print("error")
 
     def pop(self):
         self.semantic_stack.pop()
@@ -292,24 +254,18 @@ class CodeGeneration:
 
     def save(self):
         self.semantic_stack.push(self.index)
-        # print("save ", self.index)
         self.index += 1
 
     def jpf(self):
-        # print("in jpf")
-        # print(self.semantic_stack.top())
-        # print("**")
+
         self.pb[self.semantic_stack.top()] = '(JPF, {}, {}, )'.format(self.semantic_stack.get_from_top(1),self.index + 1)
         self.semantic_stack.pop(2)
         self.semantic_stack.push(self.index)
         self.index += 1
 
     def endif(self):
-        # print("*#")
-        # print(self.semantic_stack.top())
         self.pb[self.semantic_stack.top()] = '(JPF, {}, {}, )'.format(self.semantic_stack.get_from_top(1),self.index)
         self.semantic_stack.pop(2)
-        #self.index += 1
 
 
     def jp(self):
@@ -324,21 +280,13 @@ class CodeGeneration:
                                                                       self.semantic_stack.get_from_top(1))
         self.index += 1
         self.semantic_stack.pop(2)
-
-        ###############
-        start = self.loop_scope_stack.top()
-        self.loop_scope_stack.pop(1)
+        start = self.break_stack.top()
+        self.break_stack.pop(1)
         self.pb[start] = '(JP, {}, , )'.format(start + 2)
         self.pb[start + 1] = '(JP, {}, , )'.format(self.index)
 
 
     def assign(self, line_num):
-        par1_type = self.get_type(self.semantic_stack.top())
-        par2_type = self.get_type(self.semantic_stack.get_from_top(1))
-        # if par1_type == 'array' or par2_type == 'array':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'array', 'int')
-        # elif par1_type == 'function' or par2_type == 'function':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'function', 'int')
         self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(self.semantic_stack.top(),
                                                           self.semantic_stack.get_from_top(1))
         temp = self.semantic_stack.top()
@@ -361,12 +309,6 @@ class CodeGeneration:
         self.semantic_stack.push('@' + str(t))
 
     def relop(self, line_num):
-        par1_type = self.get_type(self.semantic_stack.top())
-        par2_type = self.get_type(self.semantic_stack.get_from_top(2))
-        # if par1_type == 'array' or par2_type == 'array':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'array', 'int')
-        # elif par1_type == 'function' or par2_type == 'function':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'function', 'int')
         addr = self.get_temp()
         if self.semantic_stack.get_from_top(1) == '<':
             self.pb[self.index] = '(LT, {}, {}, {})'.format(self.semantic_stack.get_from_top(2),
@@ -383,12 +325,6 @@ class CodeGeneration:
         self.semantic_stack.push(token)
 
     def add_or_sub(self, line_num):
-        par1_type = self.get_type(self.semantic_stack.top())
-        par2_type = self.get_type(self.semantic_stack.get_from_top(2))
-        # if par1_type == 'array' or par2_type == 'array':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'array', 'int')
-        # elif par1_type == 'function' or par2_type == 'function':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'function', 'int')
         t = self.get_temp()
         if self.semantic_stack.get_from_top(1) == '+':
             self.pb[self.index] = '(ADD, {}, {}, {})'.format(self.semantic_stack.top(),
@@ -401,12 +337,6 @@ class CodeGeneration:
         self.semantic_stack.push(t)
 
     def mult(self, line_num):
-        par1_type = self.get_type(self.semantic_stack.top())
-        par2_type = self.get_type(self.semantic_stack.get_from_top(1))
-        # if par1_type == 'array' or par2_type == 'array':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'array', 'int')
-        # elif par1_type == 'function' or par2_type == 'function':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'function', 'int')
         t = self.get_temp()
         self.pb[self.index] = '(MULT, {}, {}, {})'.format(self.semantic_stack.top(),
                                                           self.semantic_stack.get_from_top(1), t)
@@ -414,82 +344,6 @@ class CodeGeneration:
         self.semantic_stack.pop(2)
         self.semantic_stack.push(t)
 
-    def signed_num(self, line_num):
-        par1_type = self.get_type(self.semantic_stack.top())
-        # if par1_type == 'array':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'array', 'int')
-        # elif par1_type == 'function':
-        #     self.semantic_checker.error('type_mismatch', line_num, 'function', 'int')
-        addr = self.get_temp()
-        self.pb[self.index] = '(SUB, #0, {}, {})'.format(self.semantic_stack.top(), addr)
-        self.semantic_stack.pop()
-        self.index += 1
-        self.semantic_stack.push(addr)
-
-    def loop_size(self):
-        t = self.get_temp()
-        self.pb[self.index] = '(ASSIGN, #0, {}, )'.format(t)
-        self.index += 1
-        self.semantic_stack.push(t)
-
-    def push_zero(self):
-        self.semantic_stack.push('#0')
-
-    def count(self):
-        i = int(self.semantic_stack.get_from_top(1).replace('#', ''))
-        self.semantic_stack.push('#{}'.format(i + 1))
-        t = self.get_temp()
-        self.pb[self.index] = '(ADD, #1, {}, {})'.format(self.semantic_stack.get_from_top(2 * i + 4), t)
-        self.index += 1
-        self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(t, self.semantic_stack.get_from_top(2 * i + 4))
-        self.index += 1
-
-    def assign_for(self):
-        array_size = int(self.semantic_stack.top().replace('#', ''))
-        start = -1
-        for i in range(array_size):
-            t = self.get_temp()
-            loop_var = self.semantic_stack.get_from_top(1)
-            self.pb[self.index] = '(ASSIGN, #{}, {}, )'.format(loop_var, t)
-            self.index += 1
-            self.semantic_stack.pop(2)
-            if i == array_size - 1:
-                start = t
-        self.semantic_stack.pop()
-        self.semantic_stack.push(start)
-
-    def initial(self):
-        t = self.get_temp()
-        self.pb[self.index] = '(ASSIGN, #{}, {}, )'.format(self.semantic_stack.top(), t)
-        self.index += 1
-        self.semantic_stack.pop()
-        self.semantic_stack.push(t)
-        t = self.get_temp()
-        self.pb[self.index] = '(ASSIGN, #0, {}, )'.format(t)
-        self.index += 1
-        self.semantic_stack.push(t)
-        t = self.get_temp()
-        self.pb[self.index] = '(LT, {}, {}, {})'.format(self.semantic_stack.top(), self.semantic_stack.get_from_top(3),
-                                                        t)
-        self.index += 1
-        self.semantic_stack.push(t)
-
-    def step(self):
-        t = self.get_temp()
-        self.pb[self.index] = '(ASSIGN, @{}, {}, )'.format(self.semantic_stack.get_from_top(3), t)
-        self.index += 1
-        self.pb[self.index] = '(ASSIGN, @{}, {}, )'.format(t, self.semantic_stack.get_from_top(4))
-        self.index += 1
-        t = self.get_temp()
-        self.pb[self.index] = '(SUB, {}, #4, {})'.format(self.semantic_stack.get_from_top(3), t)
-        self.index += 1
-        self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(t, self.semantic_stack.get_from_top(3))
-        self.index += 1
-        t = self.get_temp()
-        self.pb[self.index] = '(ADD, {}, #1, {})'.format(self.semantic_stack.get_from_top(2), t)
-        self.index += 1
-        self.pb[self.index] = '(ASSIGN, {}, {}, )'.format(t, self.semantic_stack.get_from_top(2))
-        self.index += 1
 
 
     def output(self):
@@ -497,17 +351,3 @@ class CodeGeneration:
         self.index += 1
         self.semantic_stack.pop(1)
 
-    def get_type(self, par):
-        if isinstance(par, str):
-            return 'int'
-        else:
-            if par >= 1000:
-                return 'int'
-            else:
-                par_symbol = self.symbol_table.find_symbol_by_address(par, self.current_scope)
-                if par_symbol.type == 'int':
-                    return 'int'
-                elif par_symbol.type == 'int_function':
-                    return 'function'
-                else:
-                    return 'array'
