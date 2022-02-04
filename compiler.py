@@ -6,7 +6,7 @@ from anytree import RenderTree
 
 parser = parser()
 # print("hello")
-print(parser.code_generator.symbol_table)
+#print(parser.code_generator.symbol_table)
 parser.output()
 
 
