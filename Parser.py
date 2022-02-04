@@ -62,7 +62,7 @@ class parser:
 
         with open("output.txt", 'w') as file:
             if len(self.code_generator.semantic_checker.errors) > 0:
-                file.write('The output code has not been generated')
+                file.write('The code has not been generated.')
             else:
                 for idx, l in enumerate(self.code_generator.pb):
                     if l != '':

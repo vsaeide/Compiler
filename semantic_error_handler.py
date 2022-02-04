@@ -23,5 +23,5 @@ class SemanticChecker:
                                .format(args[0], args[1]))
         elif error_type == 'type_6':
             self.errors.append('#' + str(line_number) +
-                               ' : Semantic Error! Mismatch in type of argument {} for \'{}\'. Expected \'{}\' '
+                               ' : Semantic Error! Mismatch in type of argument {} of \'{}\'. Expected \'{}\' '
                                'but got \'{}\' instead.\n'.format(args[0], args[1], args[2], args[3]))
