@@ -5,7 +5,7 @@ class SymbolTable:
     def __init__(self):
         self.symbols = []
 
-    def new_symbol(self, name, address, scope, length, line_number, type):
+    def add_symbol(self, name, address, scope, length, line_number, type):
         self.symbols.append(Symbol(name, address, scope, length, line_number, type))
 
     def find_symbol_by_name(self, name, scope):

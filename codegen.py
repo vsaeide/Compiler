@@ -1,6 +1,7 @@
 from stack import Stack
 from symbol import *
 from semantic_error_handler import *
+from symbolTable import SymbolTable
 
 
 class CodeGenerator:
@@ -160,7 +161,7 @@ class CodeGenerator:
 
         else:
             if function.name != 'output':
-                params = self.symbol_table.get_func_params(function.name, function.length)
+                params = self.symbol_table.find_function_parameters(function.name, function.length)
                 params.reverse()
                 for param in params:
                     if param.type.endswith('_array_input'):
